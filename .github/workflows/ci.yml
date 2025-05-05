@@ -24,9 +24,6 @@ jobs:
           auto-activate-base: false
           python-version: 3.9
 
-      - name: Set up Conda shell
-        run: conda init bash
-
       - name: Run pre-commit hooks
         shell: bash -l {0}
         run: |
