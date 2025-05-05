@@ -1,4 +1,4 @@
-name: Conda CI
+name: CI Pipeline
 
 on:
   push:
@@ -7,21 +7,53 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  build-and-test:
+    name: Build, Lint, Test
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup Miniconda
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        environment-file: environment.yml
-        activate-environment: reverse-search
-    - name: Lint
-      run: ruff .
-    - name: Format
-      run: black --check .
-    - name: Type Check
-      run: mypy .
-    - name: Test
-      run: pytest
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          activate-environment: reverse-search
+          environment-file: environment.yml
+          auto-activate-base: false
+          python-version: 3.10
+
+      - name: Set up Conda shell
+        run: conda init bash
+
+      - name: Activate Conda environment
+        shell: bash -l {0}
+        run: |
+          conda activate reverse-search
+          conda info --envs
+
+      - name: Install pre-commit
+        shell: bash -l {0}
+        run: |
+          conda activate reverse-search
+          pip install pre-commit
+
+      - name: Run pre-commit hooks
+        shell: bash -l {0}
+        run: |
+          conda activate reverse-search
+          pre-commit run --all-files
+
+      - name: Run Unit Tests
+        shell: bash -l {0}
+        run: |
+          conda activate reverse-search
+          pytest tests/ --maxfail=3 --disable-warnings --durations=10
+
+      - name: Upload Test Coverage Report (Optional)
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: htmlcov/
