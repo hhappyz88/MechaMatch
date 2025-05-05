@@ -36,19 +36,19 @@ jobs:
       - name: Install pre-commit
         shell: bash -l {0}
         run: |
-          conda activate reverse-search
+          conda activate mecha_match
           pip install pre-commit
 
       - name: Run pre-commit hooks
         shell: bash -l {0}
         run: |
-          conda activate reverse-search
+          conda activate mecha_match
           pre-commit run --all-files
 
       - name: Run Unit Tests
         shell: bash -l {0}
         run: |
-          conda activate reverse-search
+          conda activate mecha_match
           pytest tests/ --maxfail=3 --disable-warnings --durations=10
 
       - name: Upload Test Coverage Report (Optional)
