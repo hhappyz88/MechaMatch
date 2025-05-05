@@ -33,12 +33,6 @@ jobs:
           conda activate reverse-search
           conda info --envs
 
-      - name: Install pre-commit
-        shell: bash -l {0}
-        run: |
-          conda activate mecha_match
-          pip install pre-commit
-
       - name: Run pre-commit hooks
         shell: bash -l {0}
         run: |
@@ -50,18 +44,3 @@ jobs:
         run: |
           conda activate mecha_match
           pytest tests/ --maxfail=3 --disable-warnings --durations=10
-
-      - name: Upload Test Coverage Report (Optional)
-        if: success()
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-report
-          path: htmlcov/
-      - name: Lint
-        run: ruff .
-      - name: Format
-        run: black --check .
-      - name: Type Check
-        run: mypy .
-      - name: Test
-        run: pytest
