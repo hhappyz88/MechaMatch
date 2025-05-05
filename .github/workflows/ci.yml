@@ -57,3 +57,11 @@ jobs:
         with:
           name: coverage-report
           path: htmlcov/
+      - name: Lint
+        run: ruff .
+      - name: Format
+        run: black --check .
+      - name: Type Check
+        run: mypy .
+      - name: Test
+        run: pytest
