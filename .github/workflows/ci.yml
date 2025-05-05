@@ -22,7 +22,7 @@ jobs:
           activate-environment: mecha_match
           environment-file: environment.yml
           auto-activate-base: false
-          python-version: 3.10
+          python-version: 3.9
 
       - name: Set up Conda shell
         run: conda init bash
