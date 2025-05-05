@@ -27,12 +27,6 @@ jobs:
       - name: Set up Conda shell
         run: conda init bash
 
-      - name: Activate Conda environment
-        shell: bash -l {0}
-        run: |
-          conda activate reverse-search
-          conda info --envs
-
       - name: Run pre-commit hooks
         shell: bash -l {0}
         run: |
