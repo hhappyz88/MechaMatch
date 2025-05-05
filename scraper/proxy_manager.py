@@ -46,28 +46,41 @@ def get_working_proxies(preexisting=[]):
 
 
 def save_proxies(proxies):
-    with open("proxies.txt", "w") as f:
+    with open("data/proxies.txt", "w") as f:
         f.write("\n".join(proxies))
         f.close()
 
 
 class ProxyPool:
-    def __init__(self):
+    def __init__(self, max_score=5, min_score=-3):
         with open("proxy_list.txt", "r") as f:
-            self.proxies = f.read().split("\n")
+            self.proxies = {proxy: 5 for proxy in f.read().split("\n")}
             f.close()
+        self.max_score = max_score
+        self.min_score = min_score
         if len(self.proxies) < 10:
             self.proxies = get_working_proxies(self.proxies)
             save_proxies(self.proxies)
 
     def get(self):
-        return random.choice(self.proxies)
+        good = [p for p, v in self.proxies.items() if v["score"] >= 0]
+        return random.choice(good)
 
-    def delete(self, proxy):
-        self.proxies.remove(proxy)
+    def remove(self, proxy):
+        self.proxies.pop(proxy)
         if len(self.proxies) < 10:
             self.proxies = get_working_proxies(self.proxies)
             save_proxies(self.proxies)
+
+    def mark_success(self, proxy):
+        if proxy in self.proxies:
+            self.proxies[proxy] = min(self.max_score, self.proxies[proxy] + 1)
+
+    def mark_failure(self, proxy):
+        if proxy in self.proxies:
+            self.proxies[proxy] -= 2
+            if self.proxies[proxy] < self.min_score:
+                self.remove(proxy)
 
 
 if __name__ == "__main__":
