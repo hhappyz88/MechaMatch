@@ -13,20 +13,19 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
           activate-environment: mecha_match
-          environment-file: environment.yml
+          environment-file: MechaMatch/environment.yml
           auto-activate-base: false
           python-version: 3.10
 
       - name: Set up Conda shell
         run: conda init bash
-
 
       - name: Run pre-commit hooks
         shell: bash -l {0}
