@@ -23,6 +23,7 @@ jobs:
           environment-file: ./environment.yml
           auto-activate-base: false
           python-version: 3.10
+          working-directory: .
 
       - name: Set up Conda shell
         run: conda init bash
