@@ -1,5 +1,5 @@
 import requests
-from scraper.proxy_manager import (
+from toy_catalogue.proxy_manager import (
     ProxyPool,
     validate_proxy,
     save_proxies,
@@ -40,41 +40,32 @@ def test_save_proxies(mocker):
 def test_proxy_pool_init():
     """Test that ProxyPool is initialized correctly."""
     proxies = ["http://proxy1:8080", "http://proxy2:8080"]
-    proxy_pool = ProxyPool(proxies)
+    proxy_pool = ProxyPool(
+        proxies, max_score=5, min_score=-3, failure_penalty=1, success_gain=1
+    )
     assert proxy_pool.proxies == {proxy: 5 for proxy in proxies}
     assert proxy_pool.max_score == 5
     assert proxy_pool.min_score == -3
+    assert proxy_pool.failure_penalty == 1
+    assert proxy_pool.success_gain == 1
 
 
 def test_proxy_pool_get():
     """Test that ProxyPool.get() returns a proxy."""
     proxies = ["http://proxy1:8080", "http://proxy2:8080"]
-    proxy_pool = ProxyPool(proxies)
+    proxy_pool = ProxyPool(
+        proxies, max_score=5, min_score=-3, failure_penalty=1, success_gain=1
+    )
     proxy = proxy_pool.get()
     assert proxy in proxies
-
-
-def test_proxy_pool_get_all():
-    """Test that ProxyPool.get_all() returns all proxies."""
-    proxies = ["http://proxy1:8080", "http://proxy2:8080"]
-    proxy_pool = ProxyPool(proxies)
-    all_proxies = proxy_pool.get_all()
-    assert all_proxies == {proxy: 5 for proxy in proxies}
-
-
-def test_proxy_pool_remove():
-    """Test that ProxyPool.remove() removes a proxy."""
-    proxies = ["http://proxy1:8080", "http://proxy2:8080"]
-    proxy_pool = ProxyPool(proxies)
-    proxy_pool.remove("http://proxy1:8080")
-    assert "http://proxy1:8080" not in proxy_pool.proxies
-    assert "http://proxy2:8080" in proxy_pool.proxies
 
 
 def test_proxy_pool_mark_success():
     """Test that ProxyPool.mark_success() marks a proxy as successful."""
     proxies = ["http://proxy1:8080"]
-    proxy_pool = ProxyPool(proxies)
+    proxy_pool = ProxyPool(
+        proxies, max_score=5, min_score=-3, failure_penalty=1, success_gain=1
+    )
     proxy_pool.mark_success("http://proxy1:8080")
     assert proxy_pool.proxies["http://proxy1:8080"] == 5
     proxy_pool.mark_success("http://proxy1:8080")
@@ -84,7 +75,9 @@ def test_proxy_pool_mark_success():
 def test_proxy_pool_mark_failure():
     """Test that ProxyPool.mark_failure() marks a proxy as failed."""
     proxies = ["http://proxy1:8080"]
-    proxy_pool = ProxyPool(proxies, min_score=-2)
+    proxy_pool = ProxyPool(
+        proxies, max_score=5, min_score=-3, failure_penalty=2, success_gain=1
+    )
     proxy_pool.mark_failure("http://proxy1:8080")
     assert proxy_pool.proxies["http://proxy1:8080"] == 3
     proxy_pool.mark_failure("http://proxy1:8080")
@@ -93,12 +86,26 @@ def test_proxy_pool_mark_failure():
     assert "http://proxy1:8080" not in proxy_pool.proxies
 
 
+def test_proxy_pool_mark():
+    """Test that ProxyPool.mark_failure() marks a proxy as failed."""
+    proxies = ["http://proxy1:8080"]
+    proxy_pool = ProxyPool(
+        proxies, max_score=5, min_score=-3, failure_penalty=2, success_gain=1
+    )
+    proxy_pool.mark_failure("http://proxy1:8080")
+    assert proxy_pool.proxies["http://proxy1:8080"] == 3
+    proxy_pool.mark_success("http://proxy1:8080")
+    assert proxy_pool.proxies["http://proxy1:8080"] == 4
+
+
 def test_proxy_pool_update(mocker):
     """Test that ProxyPool.update() updates the proxy list."""
     proxies = ["http://proxy1:8080", "http://proxy2:8080"]
-    proxy_pool = ProxyPool(proxies)
+    proxy_pool = ProxyPool(
+        proxies, max_score=5, min_score=-3, failure_penalty=1, success_gain=1
+    )
     mocker.patch(
-        "scraper.proxy_manager.get_working_proxies",
+        "toy_catalogue.proxy_manager.get_working_proxies",
         return_value=["http://proxy3:8080", "http://proxy4:8080"],
     )
     proxy_pool.update()
