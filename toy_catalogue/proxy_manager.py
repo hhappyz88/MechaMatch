@@ -24,7 +24,7 @@ def validate_proxy(proxy: str):
 
 def get_working_proxies(preexisting=[]):
     try:
-        proxy_list_url = "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all"
+        proxy_list_url = "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=https&timeout=10000&country=all&ssl=all&anonymity=all"
         proxies = preexisting + [
             f"http://{proxy}"
             for proxy in requests.get(proxy_list_url).text.rstrip().split("\r\n")
@@ -53,36 +53,41 @@ def save_proxies(proxies: List[str]):
 
 
 class ProxyPool:
-    def __init__(self, proxies: list[str], max_score=5, min_score=-3):
-        self.proxies = {proxy: 5 for proxy in proxies}
+    def __init__(
+        self,
+        proxies: list[str],
+        max_score=5,
+        min_score=-3,
+        failure_penalty=1,
+        success_gain=1,
+    ):
+        self.proxies = {proxy: max_score for proxy in proxies}
         self.max_score = max_score
         self.min_score = min_score
+        self.failure_penalty = failure_penalty
+        self.success_gain = success_gain
 
     def get(self):
-        good = [p for p, v in self.proxies.items() if v >= 0]
-        if len(good) <= 0:
-            return None
-        return random.choice(good)
-
-    def get_all(self):
-        return self.proxies
-
-    def remove(self, proxy: str):
-        self.proxies.pop(proxy)
+        valid = [p for p, v in self.proxies.items() if v > self.min_score]
+        if not valid:
+            raise Exception("No valid proxies")
+        return random.choice(valid)
 
     def mark_success(self, proxy: str):
         if proxy in self.proxies:
-            self.proxies[proxy] = min(self.max_score, self.proxies[proxy] + 1)
+            self.proxies[proxy] = min(
+                self.max_score, self.proxies[proxy] + self.success_gain
+            )
 
     def mark_failure(self, proxy: str):
         if proxy in self.proxies:
-            self.proxies[proxy] -= 2
-            if self.proxies[proxy] < self.min_score:
-                self.proxies.pop(proxy)
+            self.proxies[proxy] -= self.failure_penalty
+            if self.proxies[proxy] <= self.min_score:
+                del self.proxies[proxy]
 
     def update(self):
         new_proxies = get_working_proxies(self.proxies)
-        self.proxies = {proxy: 5 for proxy in new_proxies}
+        self.proxies = {proxy: self.max_score for proxy in new_proxies}
 
 
 if __name__ == "__main__":
