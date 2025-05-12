@@ -2,13 +2,16 @@ from twisted.internet.defer import DeferredSemaphore, DeferredList
 from twisted.web.client import ProxyAgent, Response
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.web.http_headers import Headers
-from twisted.internet import reactor
+from twisted.internet import reactor as _reactor
+from twisted.internet.interfaces import IReactorTime
 from twisted.python.failure import Failure
 from tqdm import tqdm
+from typing import cast
 import logging
-from toy_catalogue.proxies.proxy import Proxy
+from scraper.toy_catalogue.proxies.proxy import Proxy
 
 logger = logging.getLogger(__name__)
+reactor = cast(IReactorTime, _reactor)
 
 
 def check_proxy(proxy: Proxy, test_url="https://httpbingo.org/ip", timeout=1):
@@ -73,7 +76,7 @@ def check_proxies(proxies, concurrency=10):
     tasks = [run(p) for p in proxies]
     dlist = DeferredList(tasks, consumeErrors=True)
 
-    def on_complete(results):
+    def _on_complete(results):
         progress.close()
         successful = [
             r[1] for r in results if r[0] and type(r[1]) is Proxy and r[1].is_working
@@ -81,11 +84,11 @@ def check_proxies(proxies, concurrency=10):
         logger.info(f"{len(results) - len(successful)} proxies failed.")
         return successful
 
-    d = dlist.addCallback(on_complete)
+    d = dlist.addCallback(_on_complete)
 
-    def close_and_pass(result):
+    def _close_and_pass(result):
         progress.close()
         return result
 
-    d.addBoth(close_and_pass)
+    d.addBoth(_close_and_pass)
     return d

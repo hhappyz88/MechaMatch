@@ -3,8 +3,11 @@
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 from scrapy import signals
-from toy_catalogue.proxies.proxy_manager import ProxyManager
-import warnings
+from scraper.toy_catalogue.proxies.proxy_manager import ProxyManager
+from scrapy.http import Request, Response
+from scrapy.spiders import CrawlSpider
+from scrapy.crawler import Crawler
+from twisted.python.failure import Failure
 
 # useful for handling different item types with a single interface
 
@@ -105,16 +108,12 @@ class ToyCatalogueDownloaderMiddleware:
 
 class DynamicProxyMiddleware:
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler):
         # This method is used by Scrapy to create your spiders.
         s = cls()
-        crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
         return s
 
-    def spider_opened(self, spider):
-        spider.logger.info("Spider opened: %s" % spider.name)
-
-    def process_request(self, request, spider):
+    def process_request(self, request: Request, spider: CrawlSpider):
         try:
             proxy = ProxyManager().get_url()
             if proxy:
@@ -124,29 +123,37 @@ class DynamicProxyMiddleware:
                 request.meta["proxy"] = proxy
             else:
                 spider.logger.warning("No available proxy found. Resetting proxies")
-                spider.crawler.engine.pause()
+                if spider.crawler.engine:
+                    spider.crawler.engine.pause()
             return None
         except Exception as e:
             spider.logger.error(f"Error in proxy middleware: {e}")
 
-    def process_response(self, request, response, spider):
+    def process_response(
+        self, request: Request, response: Response, spider: CrawlSpider
+    ):
         if response.status != 200:
             spider.logger.info(
                 f"Request for {request.url} using proxy {request.meta['proxy']}"
-                + "failed: response status {response.status}"
+                + f"failed: response status {response.status}"
             )
-            ProxyManager().mark_failure(request.meta.get("proxy"))
+            proxy = request.meta.get("proxy")
+            if proxy:
+                ProxyManager().mark_failure(proxy)
             response.meta["proxy"] = ProxyManager().get_url()
             spider.logger.info(f"Retrying with new proxy: {response.meta['proxy']}")
         return response
 
-    def process_exception(self, request, exception, spider):
+    def process_exception(
+        self, request: Request, exception: Exception, spider: CrawlSpider
+    ):
         proxy = request.meta.get("proxy")
-        ProxyManager().mark_failure(proxy)
+        if proxy:
+            ProxyManager().mark_failure(proxy)
 
         spider.logger.info(
             f"Request for {request.url} using proxy {request.meta['proxy']}"
-            + "failed: exception occured {exception}"
+            + f"failed: exception occured {exception}"
         )
 
         request.dont_filter = True
@@ -157,56 +164,60 @@ class DynamicProxyMiddleware:
 
 
 class ProxyRefreshMiddleware:
-    def __init__(self, crawler):
+    def __init__(self, crawler: Crawler):
         self.crawler = crawler
         self.refreshing = False
 
     @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
+    def from_crawler(cls, crawler: Crawler, *args, **kwargs):
         ext = cls(crawler)
         crawler.signals.connect(ext.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(ext.spider_idle, signal=signals.spider_idle)
         return ext
 
-    def spider_opened(self, spider):
+    def spider_opened(self, spider: CrawlSpider):
         """Begin by refreshing proxies."""
 
         # ensureDeferred(ProxyManager().refresh())
-        spider.logger.info("[ProxyRefreshMiddleware] Initialising ProxyManager.")
+        spider.logger.info("Initialising ProxyManager.")
         self.refreshing = True
-        self.crawler.engine.pause()
+        if spider.crawler.engine:
+            spider.crawler.engine.pause()
         d = ProxyManager().refresh()  # This must return a Deferred
         d.addCallback(lambda _: self._on_refresh_complete(spider))
         d.addErrback(lambda f: self._on_refresh_failed(spider, f))
 
-        raise spider.dont_close  # Prevent spider from closing
+        return d
 
-    def spider_idle(self, spider):
+    def spider_idle(self, spider: CrawlSpider):
         """Pause the engine to refresh proxies when proxies are exhausted."""
         if ProxyManager().needs_to_be_refreshed() and not self.refreshing:
             spider.logger.info(
                 "[ProxyRefreshMiddleware] Pausing engine to refresh proxies."
             )
             self.refreshing = True
-            self.crawler.engine.pause()
+            if spider.crawler.engine:
+                spider.crawler.engine.pause()
             d = ProxyManager().refresh()
             d.addCallback(lambda _: self._on_refresh_complete(spider))
             d.addErrback(lambda f: self._on_refresh_failed(spider, f))
 
-            raise spider.dont_close
+            return d
 
-    def _on_refresh_complete(self, spider):
+    def _on_refresh_complete(self, spider: CrawlSpider):
         spider.logger.info(
             "[ProxyRefreshMiddleware] Proxy refresh completed. Resuming engine."
         )
         self.refreshing = False
-        self.crawler.engine.unpause()
+        if spider.crawler.engine:
+            spider.crawler.engine.unpause()
 
-    def _on_refresh_failed(self, spider, failure):
+    def _on_refresh_failed(self, spider: CrawlSpider, failure: Failure):
         spider.logger.error(f"[ProxyRefreshMiddleware] Proxy refresh failed: {failure}")
         self.refreshing = False
-        self.crawler.engine.unpause()
+        if spider.crawler.engine:
+            spider.crawler.engine.unpause()
 
 
 # Disable twisted SSL warnings
-warnings.filterwarnings("ignore", category=UserWarning, module="twisted")
+# warnings.filterwarnings("ignore", category=UserWarning, module="twisted")

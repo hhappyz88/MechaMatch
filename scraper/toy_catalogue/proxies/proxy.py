@@ -1,7 +1,5 @@
 from datetime import datetime
 
-import requests
-
 
 class Proxy:
     def __init__(self, data):
@@ -41,21 +39,3 @@ class Proxy:
     def mark_not_working(self):
         self.last_checked = datetime.now()
         self.is_working = False
-
-    def check_if_working(self, timeout: float = 0.5, https: bool = True) -> bool:
-        try:
-            if not self.https:
-                print("HTTP")
-            # make request with proxy and check if response connection has proxy
-            with requests.get(
-                "https://httpbingo.org/get", proxies=self.requests_dict, timeout=10
-            ) as r:
-                if r.raw.connection.sock:
-                    peername = r.raw.connection.sock.getpeername()
-                    if peername[0] == self.ip:
-                        self.mark_working()
-                        return True
-        except Exception:
-            pass
-        self.mark_not_working()
-        return False

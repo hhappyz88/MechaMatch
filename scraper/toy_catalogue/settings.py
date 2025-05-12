@@ -63,10 +63,6 @@ DOWNLOADER_MIDDLEWARES = {
     "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
 }
 
-EXTENSIONS = {
-    # 'toy_catalogue.extensions.ProxyRefreshExtension': 500,
-    "toy_catalogue.middlewares.ProxyRefreshMiddleware": 501,
-}
 
 # Retry on failed proxies
 RETRY_ENABLED = True
@@ -76,9 +72,10 @@ RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 403, 429]
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
-# EXTENSIONS = {
-#    "scrapy.extensions.telnet.TelnetConsole": None,
-# }
+EXTENSIONS = {
+    "toy_catalogue.middlewares.ProxyRefreshMiddleware": 501,
+    # "scrapy.extensions.telnet.TelnetConsole": None,
+}
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
@@ -102,9 +99,6 @@ AUTOTHROTTLE_DEBUG = False
 # HTTPCACHE_IGNORE_HTTP_CODES = []
 # HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
-# Set settings whose default value is deprecated to a future-proof value
-REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
-# TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
 
 DUPEFILTER_CLASS = "scrapy.dupefilters.RFPDupeFilter"
@@ -113,18 +107,12 @@ DUPEFILTER_CLASS = "scrapy.dupefilters.RFPDupeFilter"
 LOG_STDOUT = True
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
-""" import logging
+"""
 logging.getLogger("scrapy_user_agents.middlewares").setLevel(logging.INFO)
 logging.getLogger("scrapy.core.engine").setLevel(logging.INFO)
 logging.getLogger("scrapy.downloadermiddlewares.offsite").setLevel(logging.INFO)
 logging.getLogger("scrapy.downloadermiddlewares.redirect").setLevel(logging.INFO) """
 
-# import logging
-# from toy_catalogue.logging_filters import HTTP429Filter
-
-# # Attach the filter to the Scrapy core logger
-# scrapy_logger = logging.getLogger("scrapy.core.engine")
-# scrapy_logger.addFilter(HTTP429Filter())
 
 DOWNLOADER_CLIENT_TLS_METHOD = "TLS"
 DOWNLOADER_CLIENT_TLS_VERIFY = False

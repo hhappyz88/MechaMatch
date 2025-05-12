@@ -3,15 +3,16 @@ import logging
 from twisted.internet import defer
 from twisted.internet.defer import DeferredLock
 from typing import List
-from toy_catalogue.proxies.proxy import Proxy
-from toy_catalogue.proxies.proxy_sourcer import get_proxy_list
-from toy_catalogue.proxies.proxy_checker import check_proxies
+from scraper.toy_catalogue.proxies.proxy import Proxy
+from scraper.toy_catalogue.proxies.proxy_sourcer import get_proxy_list
+from scraper.toy_catalogue.proxies.proxy_checker import check_proxies
 
 logger = logging.getLogger(__name__)
 
 
 class ProxyManager:
     _instance = None
+    _proxy_lock: DeferredLock
 
     def __new__(cls):
         if cls._instance is None:
@@ -22,19 +23,19 @@ class ProxyManager:
             cls._instance._refresh_check = False
         return cls._instance
 
-    def get_url(self):
+    def get_url(self) -> str | None:
         working = [proxy.url for proxy in self.proxies.values() if proxy.is_working]
         return random.choice(working) if working else None
 
-    def mark_success(self, proxy_url):
+    def mark_success(self, proxy_url: str):
         if proxy_url in self.proxies:
             self.proxies[proxy_url].mark_working()
 
-    def mark_failure(self, proxy_url):
+    def mark_failure(self, proxy_url: str):
         if proxy_url in self.proxies:
             self.proxies[proxy_url].mark_not_working()
 
-    def needs_to_be_refreshed(self):
+    def needs_to_be_refreshed(self) -> bool:
         return (
             not any(p.is_working for p in self.proxies.values()) or self._refresh_check
         )
