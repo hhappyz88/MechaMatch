@@ -21,7 +21,7 @@ NEWSPIDER_MODULE = "toy_catalogue.spiders"
 ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-CONCURRENT_REQUESTS = 16
+CONCURRENT_REQUESTS = 32
 # CONCURRENT_REQUESTS_PER_DOMAIN = 8
 
 #  Configurea delay for requests for the same website (default: 0)
@@ -103,20 +103,24 @@ FEED_EXPORT_ENCODING = "utf-8"
 
 DUPEFILTER_CLASS = "scrapy.dupefilters.RFPDupeFilter"
 
-# LOG_LEVEL = "INFO"
+LOG_LEVEL = "INFO"
 LOG_STDOUT = True
 
-logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("scrapy_user_agents.middlewares.RandomUserAgentMiddleware").setLevel(
-    logging.INFO
-)
-logging.getLogger("toy_catalogue.middlewares.DynamicProxyMiddleware").setLevel(
-    logging.INFO
-)
-logging.getLogger("scrapy_user_agents.middlewares").setLevel(logging.INFO)
+
+def silence_scrapy_logs():
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("scrapy_user_agents.middlewares").setLevel(logging.INFO)
+    logging.getLogger("scrapy.core.downloader.tls").setLevel(logging.ERROR)
+    logging.getLogger("scrapy.core.engine").setLevel(logging.INFO)
+    logging.getLogger(
+        "scrapy_user_agents.middlewares.RandomUserAgentMiddleware"
+    ).setLevel(logging.INFO)
+    logging.getLogger("toy_catalogue.middlewares.DynamicProxyMiddleware").setLevel(
+        logging.INFO
+    )
+
 
 """
-logging.getLogger("scrapy.core.engine").setLevel(logging.INFO)
 logging.getLogger("scrapy.downloadermiddlewares.offsite").setLevel(logging.INFO)
 logging.getLogger("scrapy.downloadermiddlewares.redirect").setLevel(logging.INFO) """
 

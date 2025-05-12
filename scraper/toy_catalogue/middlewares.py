@@ -123,7 +123,7 @@ class DynamicProxyMiddleware:
                 )
                 request.meta["proxy"] = proxy
             else:
-                spider.logger.warning("No available proxy found. Resetting proxies")
+                spider.logger.debug("No available proxy found. Resetting proxies")
                 if spider.crawler.engine:
                     spider.crawler.engine.pause()
             return None
@@ -152,14 +152,14 @@ class DynamicProxyMiddleware:
         if proxy:
             ProxyManager().mark_failure(proxy)
 
-        spider.logger.info(
+        spider.logger.debug(
             f"Request for {request.url} using proxy {request.meta['proxy']}"
             + f"failed: exception occured {exception}"
         )
 
         request.dont_filter = True
         request.meta["proxy"] = ProxyManager().get_url()
-        spider.logger.info(f"Retrying with new proxy: {request.meta['proxy']}")
+        spider.logger.debug(f"Retrying with new proxy: {request.meta['proxy']}")
 
         return request
 

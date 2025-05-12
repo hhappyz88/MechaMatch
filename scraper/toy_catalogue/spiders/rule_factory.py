@@ -13,7 +13,6 @@ def create_rules(websites: list[str]) -> list[Rule]:
                 rules = json.load(f)
             parsed_rules = []
             for rule in rules:
-                logger.info(f"Input rules: {rule}")
                 link_extractor_config = rule.pop("link_extractor")
                 le = LinkExtractor(**link_extractor_config)
                 callback = rule.get("callback", None)

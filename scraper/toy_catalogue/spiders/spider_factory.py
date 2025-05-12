@@ -3,8 +3,12 @@ from scrapy.http import Request, Response, TextResponse
 from urllib.parse import urlparse
 from datetime import datetime, timezone
 from typing import Generator, cast
+from scrapy import signals
 import json
 import os
+
+# import shutil
+from toy_catalogue.settings import silence_scrapy_logs
 
 
 def create_spider(input_rules: tuple[Rule]) -> type[CrawlSpider]:
@@ -16,27 +20,25 @@ def create_spider(input_rules: tuple[Rule]) -> type[CrawlSpider]:
             super().__init__(*args, **kwargs)
             self.start_urls = start_urls
             self.allowed_domains = [urlparse(url).netloc for url in start_urls]
+            silence_scrapy_logs()
 
-        # @classmethod
-        # def from_crawler(cls, crawler, *args, **kwargs):
-        #     # Pull param from crawler settings if needed
-        #     catalogue_format = crawler.settings.get("depth", None)
-        #     spider = super().from_crawler(crawler, *args, **kwargs)
-        #     spider.catalogue_format = catalogue_format
-        #     return spider
+        @classmethod
+        def from_crawler(cls, crawler, *args, **kwargs):
+            # Pull param from crawler settings if needed
+            spider = super().from_crawler(crawler, *args, **kwargs)
+            crawler.signals.connect(spider.spider_closed, signal=signals.spider_closed)
+            return spider
+
         def parse_start_url(self, response: Response, **kwargs):
             if self.is_bad_response(response):
-                self.logger.warning("Bad response content, scheduling retry...")
                 yield self.retry_request(response)
                 return []
             return []
 
         def parse_page(self, response: Response):
             if self.is_bad_response(response):
-                self.logger.warning("Bad response content, scheduling retry...")
                 yield self.retry_request(response)
                 return
-            self.logger.info(f"Parsing: {response.url}, {response.body.decode()}")
             # Log all links extracted on this page
             try:
                 self.logger.info(f"Currently on page: {response.url}")
@@ -46,11 +48,10 @@ def create_spider(input_rules: tuple[Rule]) -> type[CrawlSpider]:
 
         def parse_item(self, response: Response) -> Generator[Request, None, None]:
             if self.is_bad_response(response) and not self._is_webpage(response):
-                self.logger.debug("Bad response content, scheduling retry...")
                 yield self.retry_request(response)
                 return
             response = cast(TextResponse, response)
-            self.logger.info(f"Found product: {response.url}")
+            self.logger.debug(f"Found product: {response.url}")
             try:
                 # Create folder for domain
                 domain = self.allowed_domains[0]
@@ -127,5 +128,17 @@ def create_spider(input_rules: tuple[Rule]) -> type[CrawlSpider]:
 
         def _is_webpage(self, response: Response):
             return isinstance(response, TextResponse)
+
+        def spider_closed(self, spider):
+            # This will be called when the spider is closed
+            self.logger.info("Spider closed: %s", spider.name)
+            directory = f"data/{self.allowed_domains[0]}"
+            folder_count = sum(
+                os.path.isdir(os.path.join(directory, entry))
+                for entry in os.listdir(directory)
+            )
+
+            self.logger.info(f"Scraped {folder_count} products")
+            # shutil.rmtree(f'data/{self.allowed_domains[0]}')
 
     return GenericSpider

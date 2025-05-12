@@ -34,6 +34,6 @@ Spider = create_spider(rules)  # Create the spider dynamically
 # )
 process.crawl(
     Spider,
-    start_urls=["https://www.vulcanhobby.com"],
+    start_urls=["https://www.vulcanhobby.com/collections/all"],
 )
 process.start()  # Blocks until all spiders finish
