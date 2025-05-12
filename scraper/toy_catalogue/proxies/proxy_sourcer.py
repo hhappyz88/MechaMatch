@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup, Tag
 import requests
 from typing import List, Union
 from datetime import datetime, timedelta
-from scraper.toy_catalogue.proxies.proxy import Proxy
+from toy_catalogue.proxies.proxy import Proxy
 
 
 def _yes_no_to_bool(yes_or_no: str) -> bool:

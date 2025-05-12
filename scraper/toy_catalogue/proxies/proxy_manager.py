@@ -3,9 +3,9 @@ import logging
 from twisted.internet import defer
 from twisted.internet.defer import DeferredLock
 from typing import List
-from scraper.toy_catalogue.proxies.proxy import Proxy
-from scraper.toy_catalogue.proxies.proxy_sourcer import get_proxy_list
-from scraper.toy_catalogue.proxies.proxy_checker import check_proxies
+from toy_catalogue.proxies.proxy import Proxy
+from toy_catalogue.proxies.proxy_sourcer import get_proxy_list
+from toy_catalogue.proxies.proxy_checker import check_proxies
 
 logger = logging.getLogger(__name__)
 
@@ -48,20 +48,23 @@ class ProxyManager:
             logger.info("Refresh already in progress.")
             return self._refresh_event
 
-        logger.info("Starting proxy refresh...")
         self._refresh_check = True
         self._refresh_event = defer.Deferred()
-        self._refresh_check = False
+
         d = self._proxy_lock.acquire()
         d.addCallback(lambda _: self._do_refresh())
+        d.addErrback(self._on_refresh_failed)
+
         return self._refresh_event
 
     def _do_refresh(self):
         new_proxies = get_proxy_list() + [
             p for p in self.proxies.values() if p.is_working
         ]
-        logger.info(f"[ProxyManager] Total proxies to check: {len(new_proxies)}")
-        return check_proxies(new_proxies).addCallback(self._on_checked)
+        d = check_proxies(new_proxies)
+        d.addCallback(self._on_checked)
+        logger.info(f"Proxy checks initiated: {len(new_proxies)} proxies")
+        return d
 
     def _on_checked(self, working_proxies: List[Proxy]):
         try:
@@ -69,9 +72,22 @@ class ProxyManager:
             logger.info(
                 f"Proxy refresh complete: {len(working_proxies)} valid proxies."
             )
+
             if not self._refresh_event.called:
                 self._refresh_event.callback(True)
-            self._proxy_lock.release()
+
+            self._refresh_check = False
+            self._proxy_lock.release()  # Make sure this line is reached
         except Exception as e:
             logger.error(f"Exception in _on_checked: {e}", exc_info=True)
+
         return True
+
+    def _on_refresh_failed(self, failure):
+        logger.error(f"[ProxyManager] Refresh failed: {failure}", exc_info=True)
+
+        if not self._refresh_event.called:
+            self._refresh_event.errback(failure)
+
+        self._refresh_check = False  # 🔐 Cleanup
+        self._proxy_lock.release()

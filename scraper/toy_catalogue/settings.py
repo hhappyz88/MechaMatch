@@ -107,8 +107,15 @@ DUPEFILTER_CLASS = "scrapy.dupefilters.RFPDupeFilter"
 LOG_STDOUT = True
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
-"""
+logging.getLogger("scrapy_user_agents.middlewares.RandomUserAgentMiddleware").setLevel(
+    logging.INFO
+)
+logging.getLogger("toy_catalogue.middlewares.DynamicProxyMiddleware").setLevel(
+    logging.INFO
+)
 logging.getLogger("scrapy_user_agents.middlewares").setLevel(logging.INFO)
+
+"""
 logging.getLogger("scrapy.core.engine").setLevel(logging.INFO)
 logging.getLogger("scrapy.downloadermiddlewares.offsite").setLevel(logging.INFO)
 logging.getLogger("scrapy.downloadermiddlewares.redirect").setLevel(logging.INFO) """

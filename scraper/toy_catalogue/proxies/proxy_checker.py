@@ -1,6 +1,6 @@
 from twisted.internet.defer import DeferredSemaphore, DeferredList
 from twisted.web.client import ProxyAgent, Response
-from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.endpoints import clientFromString
 from twisted.web.http_headers import Headers
 from twisted.internet import reactor as _reactor
 from twisted.internet.interfaces import IReactorTime
@@ -8,14 +8,17 @@ from twisted.python.failure import Failure
 from tqdm import tqdm
 from typing import cast
 import logging
-from scraper.toy_catalogue.proxies.proxy import Proxy
+from toy_catalogue.proxies.proxy import Proxy
 
 logger = logging.getLogger(__name__)
 reactor = cast(IReactorTime, _reactor)
 
 
-def check_proxy(proxy: Proxy, test_url="https://httpbingo.org/ip", timeout=1):
-    endpoint = TCP4ClientEndpoint(reactor, proxy.ip, int(proxy.port))
+def check_proxy(proxy: Proxy, test_url="https://httpbingo.org/ip", timeout=3):
+    # endpoint = TCP4ClientEndpoint(reactor, proxy.ip, int(proxy.port))
+    endpoint_str = f"tcp:{proxy.ip}:{proxy.port}:timeout={timeout}"
+    endpoint = clientFromString(reactor, endpoint_str)
+
     agent = ProxyAgent(endpoint)
     headers = Headers({"User-Agent": ["Scrapy"]})
     d = agent.request(b"GET", test_url.encode(), headers)
@@ -25,8 +28,9 @@ def check_proxy(proxy: Proxy, test_url="https://httpbingo.org/ip", timeout=1):
     def on_timeout():
         if not d.called:
             timeout_triggered[0] = True
-            d.cancel()
+            d.errback(Failure(TimeoutError("Proxy check timed out")))
         proxy.mark_not_working()
+        d.cancel()
 
     timeout_call = reactor.callLater(timeout, on_timeout)
 
@@ -69,7 +73,8 @@ def check_proxies(proxies, concurrency=10):
                 progress.update(1)
                 return result
 
-            return d.addBoth(advance)
+            d.addCallback(advance)
+            return d
 
         return sem.run(wrapped)
 
@@ -79,9 +84,10 @@ def check_proxies(proxies, concurrency=10):
     def _on_complete(results):
         progress.close()
         successful = [
-            r[1] for r in results if r[0] and type(r[1]) is Proxy and r[1].is_working
+            r[1]
+            for r in results
+            if r[0] and isinstance(r[1], Proxy) and r[1].is_working
         ]
-        logger.info(f"{len(results) - len(successful)} proxies failed.")
         return successful
 
     d = dlist.addCallback(_on_complete)

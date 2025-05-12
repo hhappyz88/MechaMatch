@@ -1,12 +1,10 @@
 from scrapy.spiders import CrawlSpider, Rule
-from scrapy.linkextractors import LinkExtractor
 from scrapy.http import Request, Response, TextResponse
 from urllib.parse import urlparse
 from datetime import datetime, timezone
 from typing import Generator, cast
 import json
 import os
-from scraper.toy_catalogue.proxies.proxy_manager import ProxyManager
 
 
 def create_spider(input_rules: tuple[Rule]) -> type[CrawlSpider]:
@@ -26,20 +24,20 @@ def create_spider(input_rules: tuple[Rule]) -> type[CrawlSpider]:
         #     spider = super().from_crawler(crawler, *args, **kwargs)
         #     spider.catalogue_format = catalogue_format
         #     return spider
+        def parse_start_url(self, response: Response, **kwargs):
+            if self.is_bad_response(response):
+                self.logger.warning("Bad response content, scheduling retry...")
+                yield self.retry_request(response)
+                return []
+            return []
 
         def parse_page(self, response: Response):
             if self.is_bad_response(response):
                 self.logger.warning("Bad response content, scheduling retry...")
-                self.logger.warning(f"Response: {response.body.decode()}")
                 yield self.retry_request(response)
                 return
             self.logger.info(f"Parsing: {response.url}, {response.body.decode()}")
             # Log all links extracted on this page
-            links = LinkExtractor(
-                allow=["/products/[a-zA-Z0-9\\-]+$"], deny=["\\?.*"]
-            ).extract_links(cast(TextResponse, response))
-            for link in links:
-                self.logger.info(f"Extracted link 2: {link.url}")
             try:
                 self.logger.info(f"Currently on page: {response.url}")
             except Exception as e:
@@ -115,8 +113,8 @@ def create_spider(input_rules: tuple[Rule]) -> type[CrawlSpider]:
 
             new_meta = request.meta.copy()
             new_meta["retry_count"] = retry_count
-            ProxyManager().mark_failure(request.meta.get("proxy"))
-            new_meta["proxy"] = ProxyManager().get_url()  # Optional: get a new proxy
+            # ProxyManager().mark_failure(request.meta.get("proxy"))
+            # new_meta["proxy"] = ProxyManager().get_url()  # Optional: get a new proxy
             return request.replace(dont_filter=True, meta=new_meta)
 
         def is_bad_response(self, response):

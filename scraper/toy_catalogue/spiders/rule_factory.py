@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 def create_rules(websites: list[str]) -> list[Rule]:
     for website in websites:
         try:
-            with open(f"data/{website}/rules.json", "r") as f:
+            with open(f"config/scrapy_rules/{website}.json", "r") as f:
                 rules = json.load(f)
             parsed_rules = []
             for rule in rules:
