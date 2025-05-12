@@ -61,9 +61,9 @@ class ProxyManager:
         new_proxies = get_proxy_list() + [
             p for p in self.proxies.values() if p.is_working
         ]
+        logger.info(f"Proxy checks initiated: {len(new_proxies)} proxies")
         d = check_proxies(new_proxies)
         d.addCallback(self._on_checked)
-        logger.info(f"Proxy checks initiated: {len(new_proxies)} proxies")
         return d
 
     def _on_checked(self, working_proxies: List[Proxy]):

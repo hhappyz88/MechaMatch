@@ -6,6 +6,7 @@ from typing import Generator, cast
 from scrapy import signals
 import json
 import os
+from toy_catalogue.proxies.proxy_manager import ProxyManager
 
 # import shutil
 from toy_catalogue.settings import silence_scrapy_logs
@@ -47,11 +48,11 @@ def create_spider(input_rules: tuple[Rule]) -> type[CrawlSpider]:
                 return
 
         def parse_item(self, response: Response) -> Generator[Request, None, None]:
-            if self.is_bad_response(response) and not self._is_webpage(response):
+            if self.is_bad_response(response) or not self._is_webpage(response):
                 yield self.retry_request(response)
                 return
             response = cast(TextResponse, response)
-            self.logger.debug(f"Found product: {response.url}")
+            self.logger.info(f"Found product: {response.url}")
             try:
                 # Create folder for domain
                 domain = self.allowed_domains[0]
@@ -114,17 +115,27 @@ def create_spider(input_rules: tuple[Rule]) -> type[CrawlSpider]:
 
             new_meta = request.meta.copy()
             new_meta["retry_count"] = retry_count
-            # ProxyManager().mark_failure(request.meta.get("proxy"))
-            # new_meta["proxy"] = ProxyManager().get_url()  # Optional: get a new proxy
+            ProxyManager().mark_failure(request.meta.get("proxy"))
+            if retry_count > 3:
+                new_meta[
+                    "proxy"
+                ] = ProxyManager().get_url()  # Optional: get a new proxy
+            proxy_count = 0
+            for proxy in ProxyManager().proxies:
+                proxy_count += int(ProxyManager().proxies[proxy].is_working)
+            self.logger.info(f"Proxies left{proxy_count}")
             return request.replace(dont_filter=True, meta=new_meta)
 
         def is_bad_response(self, response):
             # Check for Cloudflare captcha, login redirect, etc.
-            return (
+            result = (
                 response.status != 200
                 or b"remote_addr" in response.body.lower()
                 and b"http_user-agent" in response.body.lower()
             )
+            # if result:
+            #     self.logger.info(f"{response.body.decode()}")
+            return result
 
         def _is_webpage(self, response: Response):
             return isinstance(response, TextResponse)

@@ -1,16 +1,19 @@
-[
-    {   
-        "link_extractor": {
-            "allow": ["/collections/all\\?page=[0-9]"]
+{
+    "start_url": "https://www.vulcanhobby.com/collections/all",
+    "rules": [
+        {   
+            "link_extractor": {
+                "allow": ["/collections/all\\?page=[0-9]"]
+            },
+            "callback": "parse_page",
+            "follow": true
         },
-        "callback": "parse_page",
-        "follow": true
-    },
-    {
-        "link_extractor": {
-            "allow": ["/products/[a-zA-Z0-9\\-]+$"]
-        },
-        "callback": "parse_item",
-        "follow": false
-    }
-]
+        {
+            "link_extractor": {
+                "allow": ["/products/[a-zA-Z0-9\\-]+$"]
+            },
+            "callback": "parse_item",
+            "follow": false
+        }
+    ]
+}

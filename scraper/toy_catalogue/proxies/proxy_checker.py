@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 reactor = cast(IReactorTime, _reactor)
 
 
-def check_proxy(proxy: Proxy, test_url="https://httpbingo.org/ip", timeout=3):
+def check_proxy(proxy: Proxy, test_url="https://httpbingo.org/ip", timeout=2):
     # endpoint = TCP4ClientEndpoint(reactor, proxy.ip, int(proxy.port))
     endpoint_str = f"tcp:{proxy.ip}:{proxy.port}:timeout={timeout}"
     endpoint = clientFromString(reactor, endpoint_str)

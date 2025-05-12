@@ -9,6 +9,7 @@ from scrapy.crawler import Crawler
 from twisted.python.failure import Failure
 import logging
 from toy_catalogue.proxies.proxy_manager import ProxyManager
+from toy_catalogue.proxies.log_handler import BufferingLogHandler
 
 # useful for handling different item types with a single interface
 
@@ -108,24 +109,68 @@ class ToyCatalogueDownloaderMiddleware:
 
 
 class DynamicProxyMiddleware:
+    def __init__(self, crawler: Crawler):
+        self.crawler = crawler
+        self.refreshing = False
+        self.logger = logging.getLogger(__name__)
+        self._logstat_original_level = self.logger.level
+        self.buffer_handler = BufferingLogHandler()
+
     @classmethod
-    def from_crawler(cls, crawler: Crawler):
-        # This method is used by Scrapy to create your spiders.
-        s = cls()
-        return s
+    def from_crawler(cls, crawler: Crawler, *args, **kwargs):
+        ext = cls(crawler)
+        crawler.signals.connect(ext.spider_opened, signal=signals.spider_opened)
+        crawler.signals.connect(ext.spider_idle, signal=signals.spider_idle)
+        return ext
+
+    def spider_opened(self, spider: CrawlSpider):
+        """Begin by refreshing proxies."""
+        self._pause(spider)
+
+    def spider_idle(self, spider: CrawlSpider):
+        """Pause the engine to refresh proxies when proxies are exhausted."""
+        spider.logger.info(
+            f"{self.refreshing}, {ProxyManager().needs_to_be_refreshed()}"
+        )
+        if ProxyManager().needs_to_be_refreshed() and not self.refreshing:
+            self._pause(spider)
+
+    def _on_refresh_complete(self, spider: CrawlSpider):
+        spider.logger.info(
+            "[ProxyRefreshMiddleware] Proxy refresh completed. Resuming engine."
+        )
+        self._unpause(spider)
+
+    def _on_refresh_failed(self, spider: CrawlSpider, failure: Failure):
+        spider.logger.error(f"[ProxyRefreshMiddleware] Proxy refresh failed: {failure}")
+        self._unpause(spider)
+
+    def _pause(self, spider: CrawlSpider):
+        """Pause the engine to refresh proxies when proxies are exhausted."""
+        spider.logger.info("Initialising ProxyManager.")
+        self.refreshing = True
+        if spider.crawler.engine:
+            spider.crawler.engine.pause()
+            self.logger.addHandler(self.buffer_handler)
+            self.logger.setLevel(logging.CRITICAL)
+
+        d = ProxyManager().refresh()  # This must return a Deferred
+        d.addCallback(lambda _: self._on_refresh_complete(spider))
+        d.addErrback(lambda f: self._on_refresh_failed(spider, f))
+
+        return d
+
+    def _unpause(self, spider: CrawlSpider):
+        self.refreshing = False
+        if spider.crawler.engine:
+            spider.crawler.engine.unpause()
+            self.logger.setLevel(self._logstat_original_level)
+            self.buffer_handler.flush_to(self.logger)
+            self.logger.removeHandler(self.buffer_handler)
 
     def process_request(self, request: Request, spider: CrawlSpider):
         try:
-            proxy = ProxyManager().get_url()
-            if proxy:
-                spider.logger.debug(
-                    f"Assigned new proxy: {proxy} for request: {request.url}"
-                )
-                request.meta["proxy"] = proxy
-            else:
-                spider.logger.debug("No available proxy found. Resetting proxies")
-                if spider.crawler.engine:
-                    spider.crawler.engine.pause()
+            request.meta["proxy"] = self._get_new_proxy(spider)
             return None
         except Exception as e:
             spider.logger.error(f"Error in proxy middleware: {e}")
@@ -134,15 +179,15 @@ class DynamicProxyMiddleware:
         self, request: Request, response: Response, spider: CrawlSpider
     ):
         if response.status != 200:
-            spider.logger.info(
+            spider.logger.debug(
                 f"Request for {request.url} using proxy {request.meta['proxy']}"
                 + f"failed: response status {response.status}"
             )
             proxy = request.meta.get("proxy")
             if proxy:
                 ProxyManager().mark_failure(proxy)
-            response.meta["proxy"] = ProxyManager().get_url()
-            spider.logger.info(f"Retrying with new proxy: {response.meta['proxy']}")
+            response.meta["proxy"] = self._get_new_proxy(spider)
+            spider.logger.debug(f"Retrying with new proxy: {response.meta['proxy']}")
         return response
 
     def process_exception(
@@ -158,73 +203,21 @@ class DynamicProxyMiddleware:
         )
 
         request.dont_filter = True
-        request.meta["proxy"] = ProxyManager().get_url()
+        request.meta["proxy"] = self._get_new_proxy(spider)
         spider.logger.debug(f"Retrying with new proxy: {request.meta['proxy']}")
 
         return request
 
-
-logstat_logger = logging.getLogger("scrapy.extensions.logstats")
-
-
-class ProxyRefreshMiddleware:
-    def __init__(self, crawler: Crawler):
-        self.crawler = crawler
-        self.refreshing = False
-        self._logstat_original_level = logstat_logger.level
-        self._logstat_handler_levels = [h.level for h in logstat_logger.handlers]
-
-    @classmethod
-    def from_crawler(cls, crawler: Crawler, *args, **kwargs):
-        ext = cls(crawler)
-        crawler.signals.connect(ext.spider_opened, signal=signals.spider_opened)
-        crawler.signals.connect(ext.spider_idle, signal=signals.spider_idle)
-        return ext
-
-    def _pause(self, spider: CrawlSpider):
-        """Pause the engine to refresh proxies when proxies are exhausted."""
-        spider.logger.info("Initialising ProxyManager.")
-        self.refreshing = True
-        if spider.crawler.engine:
-            spider.crawler.engine.pause()
-            logstat_logger.setLevel(logging.WARNING)
-            for h in logstat_logger.handlers:
-                h.setLevel(logging.WARNING)
-        d = ProxyManager().refresh()  # This must return a Deferred
-        d.addCallback(lambda _: self._on_refresh_complete(spider))
-        d.addErrback(lambda f: self._on_refresh_failed(spider, f))
-
-        return d
-
-    def spider_opened(self, spider: CrawlSpider):
-        """Begin by refreshing proxies."""
-        self._pause(spider)
-
-    def spider_idle(self, spider: CrawlSpider):
-        """Pause the engine to refresh proxies when proxies are exhausted."""
-        if ProxyManager().needs_to_be_refreshed() and not self.refreshing:
+    def _get_new_proxy(self, spider: CrawlSpider):
+        proxy = ProxyManager().get_url()
+        if proxy:
+            return proxy
+        else:
+            spider.logger.debug("No available proxy found. Resetting proxies")
             self._pause(spider)
 
-    def _on_refresh_complete(self, spider: CrawlSpider):
-        spider.logger.info(
-            "[ProxyRefreshMiddleware] Proxy refresh completed. Resuming engine."
-        )
-        self._unpause(spider)
 
-    def _on_refresh_failed(self, spider: CrawlSpider, failure: Failure):
-        spider.logger.error(f"[ProxyRefreshMiddleware] Proxy refresh failed: {failure}")
-        self._unpause(spider)
-
-    def _unpause(self, spider: CrawlSpider):
-        self.refreshing = False
-        if spider.crawler.engine:
-            spider.crawler.engine.unpause()
-            logstat_logger = logging.getLogger("scrapy.extensions.logstats")
-            logstat_logger.setLevel(self._logstat_original_level)
-            for handler, level in zip(
-                logstat_logger.handlers, self._logstat_handler_levels
-            ):
-                handler.setLevel(level)
+logstat_logger = logging.getLogger("scrapy.extensions.logstats")
 
 
 # Disable twisted SSL warnings

@@ -36,7 +36,7 @@ DOWNLOAD_TIMEOUT = 15
 # CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
-# COOKIES_ENABLED = False
+COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
 # TELNETCONSOLE_ENABLED = False
@@ -72,10 +72,9 @@ RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 403, 429]
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
-EXTENSIONS = {
-    "toy_catalogue.middlewares.ProxyRefreshMiddleware": 501,
-    # "scrapy.extensions.telnet.TelnetConsole": None,
-}
+# EXTENSIONS = {
+#     # "scrapy.extensions.telnet.TelnetConsole": None,
+# }
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
@@ -103,21 +102,23 @@ FEED_EXPORT_ENCODING = "utf-8"
 
 DUPEFILTER_CLASS = "scrapy.dupefilters.RFPDupeFilter"
 
-LOG_LEVEL = "INFO"
+# LOG_LEVEL = "INFO"
 LOG_STDOUT = True
 
 
 def silence_scrapy_logs():
-    logging.getLogger("httpx").setLevel(logging.WARNING)
-    logging.getLogger("scrapy_user_agents.middlewares").setLevel(logging.INFO)
-    logging.getLogger("scrapy.core.downloader.tls").setLevel(logging.ERROR)
-    logging.getLogger("scrapy.core.engine").setLevel(logging.INFO)
-    logging.getLogger(
-        "scrapy_user_agents.middlewares.RandomUserAgentMiddleware"
-    ).setLevel(logging.INFO)
-    logging.getLogger("toy_catalogue.middlewares.DynamicProxyMiddleware").setLevel(
-        logging.INFO
-    )
+    logging.getLogger().setLevel(logging.WARNING)
+    # logging.getLogger("httpx").setLevel(logging.WARNING)
+    # logging.getLogger("scrapy_user_agents.middlewares").setLevel(logging.INFO)
+    # logging.getLogger("scrapy.core.downloader.tls").setLevel(logging.ERROR)
+    # logging.getLogger("scrapy.core.engine").setLevel(logging.INFO)
+    # logging.getLogger(
+    #     "scrapy_user_agents.middlewares.RandomUserAgentMiddleware"
+    # ).setLevel(logging.INFO)
+    # logging.getLogger("toy_catalogue.middlewares.DynamicProxyMiddleware").setLevel(
+    #     logging.INFO
+    # )
+    pass
 
 
 """
