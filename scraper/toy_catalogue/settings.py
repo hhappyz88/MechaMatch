@@ -27,19 +27,19 @@ CONCURRENT_REQUESTS = 32
 #  Configurea delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 1
+DOWNLOAD_DELAY = 0.25
 RANDOMIZE_DOWNLOAD_DELAY = True
-DOWNLOAD_TIMEOUT = 15
+# DOWNLOAD_TIMEOUT = 15
 
 # The download delay setting will honor only one of:
 # CONCURRENT_REQUESTS_PER_DOMAIN = 16
 # CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
-COOKIES_ENABLED = False
+COOKIES_ENABLED = True
 
 # Disable Telnet Console (enabled by default)
-# TELNETCONSOLE_ENABLED = False
+TELNETCONSOLE_ENABLED = False
 
 # Override the default request headers:
 # DEFAULT_REQUEST_HEADERS = {
@@ -56,13 +56,18 @@ COOKIES_ENABLED = False
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
+    "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": None,
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": None,
     "scrapy_user_agents.middlewares.RandomUserAgentMiddleware": 400,
     # "scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware": 110,
     "toy_catalogue.middlewares.DynamicProxyMiddleware": 610,
     "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
 }
-
+SPIDER_MIDDLEWARES = {
+    "scrapy.spidermiddlewares.referer.RefererMiddleware": None,
+    "scrapy.spidermiddlewares.offsite.OffsiteMiddleware": None,
+    "scrapy.spidermiddlewares.depth.DepthMiddleware": None,
+}
 
 # Retry on failed proxies
 RETRY_ENABLED = True
@@ -79,15 +84,17 @@ RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 403, 429]
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 # ITEM_PIPELINES = {
-#    "toy_catalogue.pipelines.ToyCataloguePipeline": 300,
+#     # 'toy_catalogue.pipelines.HtmlDownloadPipeline': 100,
+#     # 'toy_catalogue.pipelines.ImagesDownloadPipeline': 200,
 # }
 
+IMAGES_STORE = "data/miscellaneous"
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
 AUTOTHROTTLE_ENABLED = True
-AUTOTHROTTLE_START_DELAY = 5
-AUTOTHROTTLE_MAX_DELAY = 60
-AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
+AUTOTHROTTLE_START_DELAY = 1
+AUTOTHROTTLE_MAX_DELAY = 10
+AUTOTHROTTLE_TARGET_CONCURRENCY = 2
 AUTOTHROTTLE_DEBUG = False
 
 # Enable and configure HTTP caching (disabled by default)

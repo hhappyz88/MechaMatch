@@ -1,26 +1,38 @@
-from scrapy.spiders import CrawlSpider, Rule
+from scrapy.spiders import CrawlSpider
 from scrapy.http import Request, Response, TextResponse
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 from datetime import datetime, timezone
 from typing import Generator, cast
 from scrapy import signals
+from urllib.parse import urljoin
 import json
 import os
 from toy_catalogue.proxies.proxy_manager import ProxyManager
 
+
 # import shutil
 from toy_catalogue.settings import silence_scrapy_logs
+from toy_catalogue.spiders.rule_factory import SpiderConfig
+from config.config import DATA_ROOT
 
 
-def create_spider(input_rules: tuple[Rule]) -> type[CrawlSpider]:
+def canonicalise_url(url: str) -> str:
+    parsed = urlparse(url)
+    return urlunparse(parsed._replace(query=""))
+
+
+def create_spider(input_rules: SpiderConfig) -> type[CrawlSpider]:
     class GenericSpider(CrawlSpider):
-        name = "site_spider"
-        rules = input_rules
+        name = input_rules["name"]
+        start_urls = [input_rules["start_url"]]
+        allowed_domains = [urlparse(url).netloc for url in start_urls]
 
-        def __init__(self, start_urls: list[str], *args, **kwargs):
+        def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-            self.start_urls = start_urls
-            self.allowed_domains = [urlparse(url).netloc for url in start_urls]
+            self.name = input_rules["name"]
+            self.collection_le = input_rules["collection_le"]
+            self.page_le = input_rules["page_le"]
+            self.seen_images = set()
             silence_scrapy_logs()
 
         @classmethod
@@ -30,72 +42,71 @@ def create_spider(input_rules: tuple[Rule]) -> type[CrawlSpider]:
             crawler.signals.connect(spider.spider_closed, signal=signals.spider_closed)
             return spider
 
-        def parse_start_url(self, response: Response, **kwargs):
-            if self.is_bad_response(response):
-                yield self.retry_request(response)
-                return []
-            return []
+        def start_requests(self):
+            for url in self.start_urls:
+                # Explicitly tell Scrapy to use parse_collection
+                yield Request(url, callback=self.parse_collection)
 
-        def parse_page(self, response: Response):
+        def parse_collection(
+            self, response: Response
+        ) -> Generator[Request, None, None]:
             if self.is_bad_response(response):
                 yield self.retry_request(response)
                 return
-            # Log all links extracted on this page
-            try:
-                self.logger.info(f"Currently on page: {response.url}")
-            except Exception as e:
-                self.logger.error(f"Error in parse_page: {e}")
-                return
+            response = cast(TextResponse, response)
+            link_urls = [link.url for link in self.page_le.extract_links(response)]
+            yield from response.follow_all(link_urls, callback=self.parse_item)
+
+            coll_urls = [
+                link.url for link in self.collection_le.extract_links(response)
+            ]
+            yield from response.follow_all(coll_urls, callback=self.parse_collection)
 
         def parse_item(self, response: Response) -> Generator[Request, None, None]:
             if self.is_bad_response(response) or not self._is_webpage(response):
                 yield self.retry_request(response)
                 return
             response = cast(TextResponse, response)
-            self.logger.info(f"Found product: {response.url}")
             try:
                 # Create folder for domain
-                domain = self.allowed_domains[0]
                 page_id = urlparse(response.url).path.replace("/", "_").lstrip("_")
-                path = f"data/{domain}/{page_id}"
-                os.makedirs(path, exist_ok=True)
-                os.makedirs(f"{path}/images", exist_ok=True)
-                # Save raw HTML
-                with open(os.path.join(path, "page.html"), "wb") as f:
+                folder_path = os.path.join(DATA_ROOT, self.name, page_id)
+                os.makedirs(os.path.join(folder_path, "images"), exist_ok=True)
+
+                # Save the HTML content as a file
+                with open(os.path.join(folder_path, "page.html"), "wb") as f:
                     f.write(response.body)
-
-                # Extract and download images
-                for i, img_url in enumerate(response.css("img::attr(src)").getall()):
-                    img_url = response.urljoin(img_url)
-                    yield Request(
-                        img_url,
-                        callback=self.save_image,
-                        meta={"path": path, "index": i},
-                    )
-
-                # Save metadata (title, etc.)
                 metadata = {
                     "url": response.url,
                     "title": response.css("title::text").get(default="").strip(),
                     "time": datetime.now(timezone.utc).isoformat(),
                     "encoding": response.encoding,
                 }
-                with open(os.path.join(path, "metadata.json"), "w") as f:
-                    f.write(json.dumps(metadata, indent=2))
+                meta_path = os.path.join(folder_path, "metadata.json")
+                with open(meta_path, "w", encoding="utf-8") as f:
+                    json.dump(metadata, f, indent=2)
+                self.logger.debug(f"Saved HTML for {response.url}")
+                image_urls = response.css("img::attr(src)").getall()
+                for i, img_url in enumerate(image_urls):
+                    canonical = canonicalise_url(img_url)
+                    if canonical not in self.seen_images:
+                        self.seen_images.add(canonical)
+                        yield Request(
+                            url=urljoin(response.url, img_url),
+                            callback=self.save_image,
+                            meta={"folder_path": folder_path, "index": i},
+                        )
             except Exception as e:
                 self.logger.error(f"Error in parse_item: {e}")
                 return
 
-        def save_image(self, response: Response):
-            try:
-                path = response.meta["path"]
-                index = response.meta["index"]
-                filename = os.path.join(path, f"images/image_{index}.jpg")
-                with open(filename, "wb") as f:
-                    f.write(response.body)
-            except Exception as e:
-                self.logger.error(f"Error in save_image: {e}")
-                return
+        def save_image(self, response):
+            path = response.meta["folder_path"]
+            index = response.meta["index"]
+            ext = os.path.splitext(urlparse(response.url).path)[-1] or ".jpg"
+
+            with open(os.path.join(path, "images", f"image_{index}{ext}"), "wb") as f:
+                f.write(response.body)
 
         def errback_retry(self, failure):
             request = failure.request
@@ -123,7 +134,6 @@ def create_spider(input_rules: tuple[Rule]) -> type[CrawlSpider]:
             proxy_count = 0
             for proxy in ProxyManager().proxies:
                 proxy_count += int(ProxyManager().proxies[proxy].is_working)
-            self.logger.info(f"Proxies left{proxy_count}")
             return request.replace(dont_filter=True, meta=new_meta)
 
         def is_bad_response(self, response):
@@ -133,8 +143,8 @@ def create_spider(input_rules: tuple[Rule]) -> type[CrawlSpider]:
                 or b"remote_addr" in response.body.lower()
                 and b"http_user-agent" in response.body.lower()
             )
-            # if result:
-            #     self.logger.info(f"{response.body.decode()}")
+            if result:
+                self.logger.info(f"{response.body.decode()}")
             return result
 
         def _is_webpage(self, response: Response):
@@ -143,7 +153,7 @@ def create_spider(input_rules: tuple[Rule]) -> type[CrawlSpider]:
         def spider_closed(self, spider):
             # This will be called when the spider is closed
             self.logger.info("Spider closed: %s", spider.name)
-            directory = f"data/{self.allowed_domains[0]}"
+            directory = f"data/{self.name}"
             folder_count = sum(
                 os.path.isdir(os.path.join(directory, entry))
                 for entry in os.listdir(directory)

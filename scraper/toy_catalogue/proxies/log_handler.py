@@ -1,13 +1,12 @@
 import logging
 from collections import deque
 import threading
-from typing import Deque
 
 
 class BufferingLogHandler(logging.Handler):
     def __init__(self):
         super().__init__()
-        self.buffer: Deque[logging.LogRecord] = deque()
+        self.buffer = deque()
         self.lock: threading.Lock = threading.Lock()
 
     def emit(self, record) -> None:

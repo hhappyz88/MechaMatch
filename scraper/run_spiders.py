@@ -34,11 +34,9 @@ if __name__ == "__main__":
         print("Incorrect Usage, try: python scraper/run_spiders.py website")
         sys.exit(1)
     process = CrawlerProcess(get_project_settings())  # Load settings.py
-    start_url, rules = create_rules([sys.argv[1]])
 
-    Spider = create_spider(rules)  # Create the spider dynamically
-    process.crawl(
-        Spider,
-        start_urls=[start_url],
-    )
+    rule_config = create_rules(sys.argv[1])
+    print(rule_config)
+    Spider = create_spider(rule_config)  # Create the spider dynamically
+    process.crawl(Spider)
     process.start()  # Blocks until all spiders finish

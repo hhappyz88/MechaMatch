@@ -112,8 +112,7 @@ class DynamicProxyMiddleware:
     def __init__(self, crawler: Crawler):
         self.crawler = crawler
         self.refreshing = False
-        self.logger = logging.getLogger(__name__)
-        self._logstat_original_level = self.logger.level
+        self._logstat_original_level = logging.getLogger().level
         self.buffer_handler = BufferingLogHandler()
 
     @classmethod
@@ -151,8 +150,8 @@ class DynamicProxyMiddleware:
         self.refreshing = True
         if spider.crawler.engine:
             spider.crawler.engine.pause()
-            self.logger.addHandler(self.buffer_handler)
-            self.logger.setLevel(logging.CRITICAL)
+            logging.getLogger().addHandler(self.buffer_handler)
+            logging.getLogger().setLevel(logging.CRITICAL)
 
         d = ProxyManager().refresh()  # This must return a Deferred
         d.addCallback(lambda _: self._on_refresh_complete(spider))
@@ -164,9 +163,9 @@ class DynamicProxyMiddleware:
         self.refreshing = False
         if spider.crawler.engine:
             spider.crawler.engine.unpause()
-            self.logger.setLevel(self._logstat_original_level)
-            self.buffer_handler.flush_to(self.logger)
-            self.logger.removeHandler(self.buffer_handler)
+            logging.getLogger().setLevel(self._logstat_original_level)
+            self.buffer_handler.flush_to(logging.getLogger())
+            logging.getLogger().removeHandler(self.buffer_handler)
 
     def process_request(self, request: Request, spider: CrawlSpider):
         try:
