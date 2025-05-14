@@ -6,6 +6,7 @@ from typing import List
 from toy_catalogue.proxies.proxy import Proxy
 from toy_catalogue.proxies.proxy_sourcer import get_proxy_list
 from toy_catalogue.proxies.proxy_checker import check_proxies
+from toy_catalogue.proxies.proxy_loader import save_proxies
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,7 @@ class ProxyManager:
 
             self._refresh_check = False
             self._proxy_lock.release()  # Make sure this line is reached
+            self.save_proxies()
         except Exception as e:
             logger.error(f"Exception in _on_checked: {e}", exc_info=True)
 
@@ -91,3 +93,6 @@ class ProxyManager:
 
         self._refresh_check = False  # 🔐 Cleanup
         self._proxy_lock.release()
+
+    def save_proxies(self):
+        save_proxies(self.proxies.values())

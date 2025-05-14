@@ -9,14 +9,15 @@ from tqdm import tqdm
 from typing import cast
 import logging
 from toy_catalogue.proxies.proxy import Proxy
+from config.config import PROXY_TIMEOUT
 
 logger = logging.getLogger(__name__)
 reactor = cast(IReactorTime, _reactor)
 
 
-def check_proxy(proxy: Proxy, test_url="https://httpbingo.org/ip", timeout=2):
+def check_proxy(proxy: Proxy, test_url="https://httpbingo.org/ip"):
     # endpoint = TCP4ClientEndpoint(reactor, proxy.ip, int(proxy.port))
-    endpoint_str = f"tcp:{proxy.ip}:{proxy.port}:timeout={timeout}"
+    endpoint_str = f"tcp:{proxy.ip}:{proxy.port}:timeout={PROXY_TIMEOUT}"
     endpoint = clientFromString(reactor, endpoint_str)
 
     agent = ProxyAgent(endpoint)
@@ -32,7 +33,7 @@ def check_proxy(proxy: Proxy, test_url="https://httpbingo.org/ip", timeout=2):
         proxy.mark_not_working()
         d.cancel()
 
-    timeout_call = reactor.callLater(timeout, on_timeout)
+    timeout_call = reactor.callLater(PROXY_TIMEOUT, on_timeout)
 
     def resolve(value):
         if timeout_call.active():

@@ -4,14 +4,14 @@ from datetime import datetime
 class Proxy:
     def __init__(self, data):
         self._data = data
-        self.ip = data["ip"]
-        self.port = data["port"]
-        self.code = data["code"]
-        self.country = data["country"]
-        self.anonymity = data["anonymity"]
-        self.google = data["google"]
-        self.https = data["https"]
-        self.last_checked = data["last_checked"]
+        self.ip = data.get("ip", None)
+        self.port = data.get("port", None)
+        self.code = data.get("code", None)
+        self.country = data.get("country", None)
+        self.anonymity = data.get("anonymity", None)
+        self.google = data.get("google", None)
+        self.https = data.get("https", None)
+        self.last_checked = data.get("last_checked", None)
         self.is_working = False
         self.last_working = None
 
