@@ -1,101 +1,48 @@
-from twisted.internet.defer import DeferredSemaphore, DeferredList
-from twisted.web.client import ProxyAgent, Response
-from twisted.internet.endpoints import clientFromString
-from twisted.web.http_headers import Headers
-from twisted.internet import reactor as _reactor
-from twisted.internet.interfaces import IReactorTime
-from twisted.python.failure import Failure
+# from twisted.internet.defer import DeferredSemaphore, DeferredList
+# from twisted.web.client import ProxyAgent, Response
+# from twisted.internet.endpoints import clientFromString
+# from twisted.web.http_headers import Headers
+# from twisted.internet import reactor as _reactor
+# from twisted.internet.interfaces import IReactorTime
+# from twisted.python.failure import Failure
 from tqdm import tqdm
-from typing import cast
-import logging
 from toy_catalogue.proxies.proxy import Proxy
 from config.config import PROXY_TIMEOUT
+import asyncio
+import aiohttp
 
-logger = logging.getLogger(__name__)
-reactor = cast(IReactorTime, _reactor)
 
-
-def check_proxy(proxy: Proxy, test_url="https://httpbingo.org/ip"):
-    # endpoint = TCP4ClientEndpoint(reactor, proxy.ip, int(proxy.port))
-    endpoint_str = f"tcp:{proxy.ip}:{proxy.port}:timeout={PROXY_TIMEOUT}"
-    endpoint = clientFromString(reactor, endpoint_str)
-
-    agent = ProxyAgent(endpoint)
-    headers = Headers({"User-Agent": ["Scrapy"]})
-    d = agent.request(b"GET", test_url.encode(), headers)
-
-    timeout_triggered = [False]
-
-    def on_timeout():
-        if not d.called:
-            timeout_triggered[0] = True
-            d.errback(Failure(TimeoutError("Proxy check timed out")))
+async def check_proxy(proxy: Proxy, test_url="https://httpbingo.org/ip"):
+    proxy_url = proxy.url
+    try:
+        timeout_cfg = aiohttp.ClientTimeout(total=PROXY_TIMEOUT)
+        async with aiohttp.ClientSession(timeout=timeout_cfg) as session:
+            async with session.get(
+                test_url, proxy=proxy_url, headers={"User-Agent": "Scrapy"}
+            ) as resp:
+                if resp.status == 200:
+                    proxy.mark_working()
+                else:
+                    proxy.mark_not_working()
+    except Exception:
         proxy.mark_not_working()
-        d.cancel()
-
-    timeout_call = reactor.callLater(PROXY_TIMEOUT, on_timeout)
-
-    def resolve(value):
-        if timeout_call.active():
-            timeout_call.cancel()
-        return value
-
-    def handle_success(response: Response):
-        if timeout_triggered[0]:
-            return proxy
-        if response.code == 200:
-            proxy.mark_working()
-        else:
-            proxy.mark_not_working()
-        return proxy
-
-    def handle_error(failure: Failure):
-        if timeout_triggered[0]:
-            return proxy
-        proxy.mark_not_working()
-        return proxy
-
-    d.addCallback(handle_success)
-    d.addErrback(handle_error)
-    d.addBoth(resolve)  # Ensure the timeout is always handled correctly
-
-    return d
+    return proxy
 
 
-def check_proxies(proxies, concurrency=10):
-    sem = DeferredSemaphore(concurrency)
-    progress = tqdm(total=len(proxies), desc="Checking proxies", leave=True)
+async def check_proxies(proxies: list[Proxy], concurrency: int = 50) -> list[Proxy]:
+    semaphore = asyncio.Semaphore(concurrency)
+    results: list[Proxy] = []
 
-    def run(proxy):
-        def wrapped():
-            d = check_proxy(proxy)
+    async def sem_task(proxy: Proxy):
+        async with semaphore:
+            return await check_proxy(proxy)
 
-            def advance(result):
-                progress.update(1)
-                return result
+    tasks = [sem_task(p) for p in proxies]
+    for future in tqdm(
+        asyncio.as_completed(tasks), total=len(tasks), desc="Checking proxies"
+    ):
+        result = await future
+        results.append(result)
 
-            d.addCallback(advance)
-            return d
-
-        return sem.run(wrapped)
-
-    tasks = [run(p) for p in proxies]
-    dlist = DeferredList(tasks, consumeErrors=True)
-
-    def _on_complete(results):
-        progress.close()
-        successful = [
-            r[1]
-            for r in results
-            if r[0] and isinstance(r[1], Proxy) and r[1].is_working
-        ]
-        return successful
-
-    d = dlist.addCallback(_on_complete)
-
-    def _close_and_pass(result):
-        progress.close()
-        return result
-
-    d.addBoth(_close_and_pass)
-    return d
+    # Return only working proxies
+    return [p for p in results if p.is_working]

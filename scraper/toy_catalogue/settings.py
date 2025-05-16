@@ -6,30 +6,49 @@
 #     https://docs.scrapy.org/en/latest/topics/settings.html
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-import logging
 
+#############################################################################
+###################### FUNDAMENTAL CONFIGURATION ############################
 BOT_NAME = "toy_catalogue"
 
 SPIDER_MODULES = ["toy_catalogue.spiders"]
 NEWSPIDER_MODULE = "toy_catalogue.spiders"
-
-
-# Crawl responsibly by identifying yourself (and your website) on the user-agent
-# USER_AGENT = "toy_catalogue (+http://www.yourdomain.com)"
-
-# Obey robots.txt rules
+TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 ROBOTSTXT_OBEY = False
 
+#################################################################################
+############################### RETRY ###########################################
+# Retry on failed proxies
+RETRY_ENABLED = True
+RETRY_TIMES = 5
+RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 403, 429]
+
+CLOSESPIDER_TIMEOUT = 0
+CLOSESPIDER_PAGECOUNT = 0
+CLOSESPIDER_ITEMCOUNT = 0
+CLOSESPIDER_ERRORCOUNT = 0
+
+##################################################################################
+################################# SPEED ##########################################
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-CONCURRENT_REQUESTS = 32
+CONCURRENT_REQUESTS = 1
 # CONCURRENT_REQUESTS_PER_DOMAIN = 8
 
 #  Configurea delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 0.25
+DOWNLOAD_DELAY = 7
 RANDOMIZE_DOWNLOAD_DELAY = True
-# DOWNLOAD_TIMEOUT = 15
+DOWNLOAD_TIMEOUT = 60
+
+# Enable and configure the AutoThrottle extension (disabled by default)
+# See https://docs.scrapy.org/en/latest/topics/autothrottle.html
+AUTOTHROTTLE_ENABLED = True
+AUTOTHROTTLE_START_DELAY = 1
+AUTOTHROTTLE_MAX_DELAY = 10
+AUTOTHROTTLE_TARGET_CONCURRENCY = 2
+AUTOTHROTTLE_DEBUG = False
+
 
 # The download delay setting will honor only one of:
 # CONCURRENT_REQUESTS_PER_DOMAIN = 16
@@ -38,20 +57,6 @@ RANDOMIZE_DOWNLOAD_DELAY = True
 # Disable cookies (enabled by default)
 COOKIES_ENABLED = True
 
-# Disable Telnet Console (enabled by default)
-TELNETCONSOLE_ENABLED = False
-
-# Override the default request headers:
-# DEFAULT_REQUEST_HEADERS = {
-#    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-#    "Accept-Language": "en",
-# }
-
-# Enable or disable spider middlewares
-# See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-# SPIDER_MIDDLEWARES = {
-#    "toy_catalogue.middlewares.ToyCatalogueSpiderMiddleware": 543,
-# }
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
@@ -60,20 +65,28 @@ DOWNLOADER_MIDDLEWARES = {
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": None,
     "scrapy_user_agents.middlewares.RandomUserAgentMiddleware": 400,
     # "scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware": 110,
-    "toy_catalogue.middlewares.DynamicProxyMiddleware": 610,
-    "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
+    # "scrapy.downloadermiddlewares.retry.RetryMiddleware": None,
+    # "toy_catalogue.middlewares.CustomRetryMiddleware": 450,
+    # "toy_catalogue.middlewares.DynamicProxyMiddleware": 500,
+    "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 543,
+    "toy_catalogue.middlewares.AllowImagesOffsiteMiddleware": 542,
 }
-SPIDER_MIDDLEWARES = {
-    "scrapy.spidermiddlewares.referer.RefererMiddleware": None,
-    "scrapy.spidermiddlewares.offsite.OffsiteMiddleware": None,
-    "scrapy.spidermiddlewares.depth.DepthMiddleware": None,
+DOWNLOAD_HANDLERS = {
+    "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+    "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
 }
 
-# Retry on failed proxies
-RETRY_ENABLED = True
-RETRY_TIMES = 5
-RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 403, 429]
-# HTTPERROR_ALLOWED_CODES = [429]
+###########################################################################
+############################ PLAYWRIGHT ###################################
+PLAYWRIGHT_BROWSER_TYPE = "chromium"
+PLAYWRIGHT_LAUNCH_OPTIONS = {
+    "headless": False,  # Show the browser (can help bypass bot detection)
+    # Optional: add slow_mo to slow down actions for realism
+    # "slow_mo": 100,
+}
+
+SCRAPE_PLAYWRIGHT_ENABLED = True
+PLAYWRIGHT_MAX_CONTEXTS = 8
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
@@ -89,13 +102,6 @@ RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 403, 429]
 # }
 
 IMAGES_STORE = "data/miscellaneous"
-# Enable and configure the AutoThrottle extension (disabled by default)
-# See https://docs.scrapy.org/en/latest/topics/autothrottle.html
-AUTOTHROTTLE_ENABLED = True
-AUTOTHROTTLE_START_DELAY = 1
-AUTOTHROTTLE_MAX_DELAY = 10
-AUTOTHROTTLE_TARGET_CONCURRENCY = 2
-AUTOTHROTTLE_DEBUG = False
 
 # Enable and configure HTTP caching (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
@@ -106,15 +112,18 @@ AUTOTHROTTLE_DEBUG = False
 # HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
 FEED_EXPORT_ENCODING = "utf-8"
-
 DUPEFILTER_CLASS = "scrapy.dupefilters.RFPDupeFilter"
 
-# LOG_LEVEL = "INFO"
+#######################################################################################
+#################################### DEBUGGING AND LOGGING ############################
+# Disable Telnet Console (enabled by default)
+TELNETCONSOLE_ENABLED = True
 LOG_STDOUT = True
+# LOG_LEVEL = "INFO"
 
 
 def silence_scrapy_logs():
-    logging.getLogger().setLevel(logging.WARNING)
+    # logging.getLogger().setLevel(logging.WARNING)
     # logging.getLogger("httpx").setLevel(logging.WARNING)
     # logging.getLogger("scrapy_user_agents.middlewares").setLevel(logging.INFO)
     # logging.getLogger("scrapy.core.downloader.tls").setLevel(logging.ERROR)
@@ -128,15 +137,11 @@ def silence_scrapy_logs():
     pass
 
 
-"""
-logging.getLogger("scrapy.downloadermiddlewares.offsite").setLevel(logging.INFO)
-logging.getLogger("scrapy.downloadermiddlewares.redirect").setLevel(logging.INFO) """
-
-
+# DOWNLOADER_CLIENT_TLS_VERIFY = False
 DOWNLOADER_CLIENT_TLS_METHOD = "TLS"
-DOWNLOADER_CLIENT_TLS_VERIFY = False
+# DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING = True
 
-CLOSESPIDER_TIMEOUT = 0
-CLOSESPIDER_PAGECOUNT = 0
-CLOSESPIDER_ITEMCOUNT = 0
-CLOSESPIDER_ERRORCOUNT = 0
+
+DEPTH_PRIORITY = 1
+SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleFifoDiskQueue"
+SCHEDULER_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"

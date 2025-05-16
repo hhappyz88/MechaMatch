@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.9
+  - python=3.10
   - beautifulsoup4
   - fastapi
   - lxml
@@ -17,3 +17,8 @@ dependencies:
   - pre-commit
   - pytest
   - ruff
+  - scrapy
+  - pip
+  - pip:
+     -scrapy-playwright
+prefix: E:\Users\Henry Zhang\anaconda3\envs\mecha_match

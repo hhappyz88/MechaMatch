@@ -1,15 +1,14 @@
 # Setup
 ## For Conda
-conda activate mecha_match
-
-# Proxies
-python toy_catalogue/proxy_manager
+```conda activate mecha_match```
 
 # Scraping
-scrapy crawl site_spider -a start_url=https://example.com
+1. Setup Write config file in ```/scraper/config/scrapy_rules``` based on example_rule
+2. Run Scraper
+```python scraper/run_spiders.py```
 
 # Testing
-python -m pytest
+```python -m pytest```
 
 # Linting
-pre-commit run --all-files
+```pre-commit run --all-files```
