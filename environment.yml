@@ -20,5 +20,5 @@ dependencies:
   - scrapy
   - pip
   - pip:
-     -scrapy-playwright
+     - scrapy-playwright
 prefix: E:\Users\Henry Zhang\anaconda3\envs\mecha_match
