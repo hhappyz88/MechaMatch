@@ -1,9 +1,0 @@
-{
-    "start_url": "https://www.vulcanhobby.com/collections/all",
-    "collection_le": {   
-        "allow": ["/collections/all\\?page=[0-9]"]
-    },
-    "page_le": {
-        "allow": ["/products/[a-zA-Z0-9\\-]+$"]
-    }
-}

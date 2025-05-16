@@ -2,11 +2,3 @@
 #
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/items.html
-
-import scrapy
-
-
-class ProductItem(scrapy.Item):
-    name = scrapy.Field()
-    image_urls = scrapy.Field()
-    images = scrapy.Field()

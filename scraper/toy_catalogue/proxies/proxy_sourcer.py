@@ -7,7 +7,6 @@ from config.config import PROXY_TIMEOUT
 import json
 import re
 import base64
-from toy_catalogue.proxies.proxy_loader import load_proxies
 
 
 def _yes_no_to_bool(yes_or_no: str) -> bool:
@@ -31,10 +30,10 @@ def get_proxy_list() -> List[Proxy]:
     """
     result = (
         get_ssl()
-        + load_proxies()
-        + get_geonode()
-        + get_free_proxy_list()
-        + get_proxyscrape()
+        # + load_proxies()
+        # + get_geonode()
+        # + get_free_proxy_list()
+        # + get_proxyscrape()
     )
 
     return result
