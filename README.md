@@ -12,3 +12,13 @@
 
 # Linting
 ```pre-commit run --all-files```
+
+# Docker
+To setup build
+```docker compose build```
+To run script
+```docker compose run scraper conda run -n mecha_match python run_spiders.py arg1```
+To stop
+```docker compose down```
+Experiment
+```docker compose run scraper bash```

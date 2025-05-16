@@ -18,8 +18,8 @@ dependencies:
   - pytest
   - ruff
   - scrapy
-  - pip
   - types-requests
+  - tqdm
   - pip:
-     - scrapy-playwright
-prefix: E:\Users\Henry Zhang\anaconda3\envs\mecha_match
+      - scrapy-playwright
+      - aiohttp
