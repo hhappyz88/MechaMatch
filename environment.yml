@@ -19,6 +19,7 @@ dependencies:
   - ruff
   - scrapy
   - pip
+  - types-requests
   - pip:
      - scrapy-playwright
 prefix: E:\Users\Henry Zhang\anaconda3\envs\mecha_match
