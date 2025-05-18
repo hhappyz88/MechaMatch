@@ -21,7 +21,7 @@ ROBOTSTXT_OBEY = False
 # Retry on failed proxies
 RETRY_ENABLED = True
 RETRY_TIMES = 5
-RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 403, 429]
+RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 403]
 
 CLOSESPIDER_TIMEOUT = 0
 CLOSESPIDER_PAGECOUNT = 0
@@ -37,7 +37,7 @@ CONCURRENT_REQUESTS = 1
 #  Configurea delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 7
+DOWNLOAD_DELAY = 0
 RANDOMIZE_DOWNLOAD_DELAY = True
 DOWNLOAD_TIMEOUT = 60
 
@@ -71,10 +71,10 @@ DOWNLOADER_MIDDLEWARES = {
     "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 543,
     "toy_catalogue.middlewares.AllowImagesOffsiteMiddleware": 542,
 }
-DOWNLOAD_HANDLERS = {
-    "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-    "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-}
+# DOWNLOAD_HANDLERS = {
+#     "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+#     "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+# }
 
 ###########################################################################
 ############################ PLAYWRIGHT ###################################
@@ -119,7 +119,7 @@ DUPEFILTER_CLASS = "scrapy.dupefilters.RFPDupeFilter"
 # Disable Telnet Console (enabled by default)
 TELNETCONSOLE_ENABLED = True
 LOG_STDOUT = True
-# LOG_LEVEL = "INFO"
+LOG_LEVEL = "DEBUG"
 
 
 def silence_scrapy_logs():

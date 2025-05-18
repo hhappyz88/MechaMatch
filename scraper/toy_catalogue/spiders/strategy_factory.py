@@ -1,6 +1,6 @@
 from scrapy.linkextractors import LinkExtractor
 from scrapy.http import TextResponse
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 from scrapy_playwright.page import PageMethod
 
 
@@ -19,12 +19,12 @@ def create_product_strategy(
 
 def create_pagination_strategy(
     strategy: str, **kwargs
-) -> Callable[[TextResponse], str | None]:
+) -> Callable[[TextResponse], Optional[str]]:
     if strategy == "next_button":
         if "selector" not in kwargs.keys():
             raise KeyError("Missing selector for next_button pagination strategy")
 
-        def result(response: TextResponse) -> str | None:
+        def result(response: TextResponse) -> Optional[str]:
             return response.css(f"{kwargs['selector']}::attr(href)").get()
 
         return result

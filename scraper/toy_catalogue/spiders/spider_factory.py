@@ -1,4 +1,4 @@
-from scrapy.spiders import CrawlSpider
+from scrapy.spiders import Spider
 from scrapy.http import Request, Response, TextResponse
 from urllib.parse import urlparse, urlunparse
 from datetime import datetime, timezone
@@ -22,15 +22,17 @@ def is_valid_image(image_data):
     return img_type in ["jpeg", "png", "gif", "bmp", "webp"]
 
 
-def create_spider(config: SpiderConfig) -> type[CrawlSpider]:
-    class GenericSpider(CrawlSpider):
+def create_spider(config: SpiderConfig) -> type[Spider]:
+    class GenericSpider(Spider):
         name = config["site"]
         start_urls = config["start_urls"]
         allowed_domains = [urlparse(url).netloc for url in start_urls]
+        custom_settings = {"JOBDIR": f"crawls/{config['site']}"}
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.seen_urls = set()
+            self.checkpoint_data = {}
 
             # silence_scrapy_logs()
 
@@ -38,16 +40,32 @@ def create_spider(config: SpiderConfig) -> type[CrawlSpider]:
         def from_crawler(cls, crawler, *args, **kwargs):
             # Pull param from crawler settings if needed
             spider = super().from_crawler(crawler, *args, **kwargs)
+            spider.logger.info("from_crawler called")
             crawler.signals.connect(spider.spider_closed, signal=signals.spider_closed)
             return spider
 
-        def start_requests(self):
-            for url in self.start_urls:
+        async def start(self):
+            if hasattr(self, "state") and "checkpoint" in self.state:
+                self.logger.info("Resuming from checkpoint...")
+                self.checkpoint_data = self.state["checkpoint"]
                 yield Request(
-                    url,
+                    self.checkpoint_data["last_collection_page"],
                     callback=self.parse_collection,
                     meta={**config["pagination_meta"]},
                 )
+            else:
+                self.logger.info("Starting fresh crawl...")
+                for url in self.start_urls:
+                    yield Request(
+                        url,
+                        callback=self.parse_collection,
+                        meta={**config["pagination_meta"]},
+                    )
+
+        def parse(self, response):
+            self.logger.warning(
+                "Default parse() called. You may have forgotten to set callback."
+            )
 
         def parse_collection(
             self, response: Response
@@ -69,12 +87,14 @@ def create_spider(config: SpiderConfig) -> type[CrawlSpider]:
             )
 
             next_page = config["pagination_strategy"](response)
-            self.logger.info(f"Next page is {next_page}")
-            # yield response.follow(
-            #     next_page,
-            #     callback=self.parse_collection,
-            #     meta={**config["pagination_meta"]},
-            # )
+            if next_page:
+                self.logger.info(f"Next page is {next_page}")
+                yield response.follow(
+                    next_page,
+                    callback=self.parse_collection,
+                    meta={**config["pagination_meta"]},
+                )
+                self.checkpoint_data["last_collection_page"] = str(response.url)
 
         def parse_product(self, response: Response) -> Generator[Request, None, None]:
             if self.is_bad_response(response) or not self._is_webpage(response):
@@ -116,6 +136,7 @@ def create_spider(config: SpiderConfig) -> type[CrawlSpider]:
                         priority=1000,
                         dont_filter=True,
                     )
+                self.checkpoint_data["last_product"] = str(response.url)
             except Exception as e:
                 self.logger.error(f"Error in parse_product: {e}")
                 return
@@ -178,6 +199,7 @@ def create_spider(config: SpiderConfig) -> type[CrawlSpider]:
 
         def spider_closed(self, spider):
             # This will be called when the spider is closed
+            self.state["checkpoint"] = self.checkpoint_data
             self.logger.info("Spider closed: %s", spider.name)
             directory = f"data/{config['site']}"
             if os.path.isdir(directory):
@@ -187,7 +209,6 @@ def create_spider(config: SpiderConfig) -> type[CrawlSpider]:
                 )
 
                 self.logger.info(f"Scraped {folder_count} products")
-                ProxyManager().save_proxies()
                 # shutil.rmtree(f"data/{self.name}")
 
     return GenericSpider

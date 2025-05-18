@@ -14,6 +14,11 @@
 ```pre-commit run --all-files```
 
 # Docker
+## Setup single engine
+To setup build
+```docker build -t name .```
+
+## Setup Stack
 To setup build
 ```docker compose build```
 To run script

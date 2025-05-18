@@ -25,7 +25,6 @@ data/
 *.ckpt
 *.pt
 *.pth
-scraper/config
 
 # IDEs
 .vscode/
@@ -34,3 +33,8 @@ scraper/config
 # OS
 .DS_Store
 Thumbs.db
+
+# scraper
+scraper/config/proxies.json
+scraper/config/scrapy_rules
+scraper/crawls/

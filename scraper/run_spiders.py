@@ -36,7 +36,8 @@ if __name__ == "__main__":
     process = CrawlerProcess(get_project_settings())  # Load settings.py
 
     rule_config = create_rules(sys.argv[1])
-    print(rule_config)
     Spider = create_spider(rule_config)  # Create the spider dynamically
     process.crawl(Spider)
-    process.start()  # Blocks until all spiders finish
+    print("Crawler was added")  # Should print
+    process.start()
+    print("Crawler finished")  # Blocks until all spiders finish
