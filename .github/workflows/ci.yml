@@ -10,22 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      
-
       - name: Checkout Code
         uses: actions/checkout@v4
         
-      - name: Enter directory
-        shell: bash -l {0}
-        run: |
-          cd scraper
-          
       - name: Set up Miniconda
         uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
           activate-environment: mecha_match
-          environment-file: environment.yml
+          environment-file: scraper/environment.yml
           auto-activate-base: false
           python-version: 3.11
 
