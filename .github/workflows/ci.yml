@@ -10,6 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Enter directory
+        shell: bash -l {0}
+        run: |
+          cd scraper
+          
       - name: Checkout Code
         uses: actions/checkout@v4
 
