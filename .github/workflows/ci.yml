@@ -32,4 +32,4 @@ jobs:
         shell: bash -l {0}
         run: |
           conda activate mecha_match
-          pytest tests/ --maxfail=3 --disable-warnings --durations=10
+          pytest scraper/tests/ --maxfail=3 --disable-warnings --durations=10
