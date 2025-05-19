@@ -3,149 +3,141 @@
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 import os
+import requests
 from urllib.parse import urlparse
 from scrapy import signals
-from scrapy.http import Request, Response
-from scrapy.spiders import CrawlSpider
-from scrapy.crawler import Crawler
-from scrapy.downloadermiddlewares.retry import RetryMiddleware
-from twisted.internet.error import DNSLookupError, TimeoutError, TCPTimedOutError
-from twisted.web._newclient import ResponseNeverReceived
-from OpenSSL.SSL import Error as SSLError
+from scrapy.http import Request
 import logging
-from toy_catalogue.proxies.proxy_manager import ProxyManager
 from scrapy.downloadermiddlewares.offsite import OffsiteMiddleware
+import time
+import random
 
 # useful for handling different item types with a single interface
-import asyncio
 
 
-def get_proxy_from_request(request):
-    # if request.meta.get("playwright") is True:
-    #     return request.meta["proxy"].get("server")
-    # else:
-    return request.meta.get("proxy")
+class JhaoProxyMiddleware:
+    API_URL = "http://localhost:5010"
+    POOL_PARAMS = {
+        "type": "https",
+        "score": 5,
+        "anonymity": "high_anonymous",
+        "limit": 50,
+    }
+    REFRESH_INTERVAL = 120  # seconds between cache refreshes
+    BAN_CODES = {429}
 
-
-def set_proxy_from_request(request, proxy):
-    # if request.meta.get("playwright") is True:
-    # return {"server": proxy}
-    return proxy
-
-
-class DynamicProxyMiddleware:
-    def __init__(self, crawler: Crawler):
-        self.crawler = crawler
-        self.refreshing = False
-        self.refresh_lock = asyncio.Lock()
-        self.logstats_logger = logging.getLogger("scrapy.extensions.logstats")
-        self._logstat_original_level = self.logstats_logger.getEffectiveLevel()
+    def __init__(self, proxy_client=None):
+        self._proxy_client = proxy_client or _RequestsProxyClient(
+            "http://localhost:5010"
+        )
+        self._last_refresh = 0
+        self._proxies = []
 
     @classmethod
-    def from_crawler(cls, crawler: Crawler):
-        ext = cls(crawler)
-        crawler.signals.connect(ext.spider_opened, signal=signals.spider_opened)
-        crawler.signals.connect(ext.spider_idle, signal=signals.spider_idle)
-        return ext
+    def from_crawler(cls, crawler):
+        # Proxy API base URL & parameters from settings.py or defaults
+        proxy_api_url = crawler.settings.get(
+            "JHAO_PROXY_API_URL", "http://localhost:5010"
+        )
+        mw = cls(_RequestsProxyClient(proxy_api_url))
+        crawler.signals.connect(mw.spider_opened, signals.spider_opened)
+        return mw
 
-    def spider_opened(self, spider: CrawlSpider):
-        loop = asyncio.get_event_loop()
-        loop.call_soon(asyncio.create_task, self._pause(spider))
+    def spider_opened(self, spider):
+        pass  # For future use
 
-    def spider_idle(self, spider: CrawlSpider):
-        if ProxyManager().needs_to_be_refreshed() and not self.refreshing:
-            asyncio.create_task(self._pause(spider))
-
-    async def _pause(self, spider: CrawlSpider):
-        async with self.refresh_lock:
-            if self.refreshing:
-                return  # already refreshing
-            self.refreshing = True
-            spider.logger.info("Initialising ProxyManager and refreshing proxies.")
-            if spider.crawler.engine:
-                spider.crawler.engine.pause()
-            self.logstats_logger.setLevel(
-                logging.ERROR
-            )  # reduce log noise during refresh
-
-            try:
-                await ProxyManager().refresh()
-            except Exception as e:
-                spider.logger.error(
-                    f"[ProxyRefreshMiddleware] Proxy refresh failed: {e}"
-                )
-            else:
-                spider.logger.info(
-                    "[ProxyRefreshMiddleware] Proxy refresh completed. Resuming engine."
-                )
-            finally:
-                self.refreshing = False
-                if spider.crawler.engine:
-                    spider.crawler.engine.unpause()
-                self.logstats_logger.setLevel(self._logstat_original_level)
-
-    def process_request(self, request: Request, spider: CrawlSpider):
-        try:
-            proxy = self._get_new_proxy(spider)
-            request.meta["proxy"] = set_proxy_from_request(request, proxy)
-        except Exception as e:
-            spider.logger.error(f"Error getting proxy: {e}")
-        return None
-
-    def process_response(
-        self, request: Request, response: Response, spider: CrawlSpider
-    ):
-        if response.status != 200:
-            proxy = get_proxy_from_request(request)
-            spider.logger.debug(
-                f"Request for {request.url} using proxy {proxy}"
-                + f"failed: status {response.status}"
-            )
+    def process_request(self, request, spider):
+        # If the request already has a proxy (retry) keep it;
+        # otherwise assign a fresh one.
+        if "proxy" not in request.meta:
+            proxy = self._get_proxy(spider)
             if proxy:
-                ProxyManager().mark_failure(proxy)
-            new_proxy = self._get_new_proxy(spider)
-            count = len(
-                [proxy for proxy in ProxyManager().proxies.values() if proxy.is_working]
-            )
-            spider.logger.debug(
-                f"Proxies {count} left Retrying with new proxy: {new_proxy}"
-            )
-            new_request = request.replace(dont_filter=True)
-            new_request.meta["proxy"] = set_proxy_from_request(new_request, new_proxy)
-            return new_request
+                request.meta["proxy"] = proxy
+
+    def process_response(self, request, response, spider):
+        # Swap proxy & retry if response is a ban code
+        if response.status in self.BAN_CODES:
+            bad = request.meta.get("proxy")
+            if bad:
+                # Optional: tell jhao to delete/bury that proxy
+                try:
+                    requests.get(
+                        f"{self.API_URL}/ban",
+                        params={"proxy": bad.replace("http://", "")},
+                        timeout=2,
+                    )
+                except Exception:
+                    pass
+                self._ban_proxy(bad)
+                spider.logger.debug(f"Banned proxy {bad} due to HTTP {response.status}")
+            # Give Scrapy a fresh proxy and retry
+            new_req = request.copy()
+            new_req.dont_filter = True
+            new_req.meta.pop("proxy", None)  # ensure we pick a new one
+            return new_req
         return response
 
-    def process_exception(
-        self, request: Request, exception: Exception, spider: CrawlSpider
-    ):
-        proxy = get_proxy_from_request(request)
-        if proxy:
-            ProxyManager().mark_failure(proxy)
+    def process_exception(self, request, exception, spider):
+        # Network error → ditch proxy & retry
+        bad = request.meta.get("proxy")
+        if bad:
+            try:
+                requests.get(
+                    f"{self.API_URL}/ban",
+                    params={"proxy": bad.replace("http://", "")},
+                    timeout=2,
+                )
+            except Exception:
+                pass
+            self._ban_proxy(bad)
+            spider.logger.debug(f"Dropped proxy {bad} due to exception {exception}")
+        new_req = request.copy()
+        new_req.dont_filter = True
+        new_req.meta.pop("proxy", None)
+        return new_req
 
-        spider.logger.debug(
-            f"Request for {request.url} using proxy "
-            + f"{proxy} failed: exception {exception}"
-        )
-        spider.logger.debug(f"{request.meta}")
-        new_proxy = self._get_new_proxy(spider)
-        spider.logger.debug(f"Retrying with new proxy: {new_proxy}")
+    def _refresh_cache(self, spider, force=False):
+        now = time.time()
+        if force or now - self._last_refresh > self.REFRESH_INTERVAL:
+            try:
+                self._proxies = self._proxy_client.fetch_batch(
+                    limit=self.POOL_PARAMS["limit"]
+                )
+                random.shuffle(self._proxies)
+                self._last_refresh = now
+                spider.logger.info(f"Fetched {len(self._proxies)} proxies from pool")
+            except Exception as e:
+                spider.logger.warning(f"ProxyRotator429: cache refresh failed: {e}")
 
-        new_request = request.replace(dont_filter=True)
-        new_request.meta["proxy"] = set_proxy_from_request(new_request, new_proxy)
-        return new_request
+    def _ban_proxy(self, proxy_url):
+        ip_port = proxy_url.replace("http://", "").replace("https://", "")
+        self._proxy_client.ban(ip_port)
 
-    def _get_new_proxy(self, spider: CrawlSpider) -> str:
-        proxy = ProxyManager().get_url()
-        if proxy:
-            return proxy
-        else:
-            spider.logger.debug("No available proxy found. Refreshing proxies...")
-            if ProxyManager().needs_to_be_refreshed() and not self.refreshing:
-                asyncio.create_task(self._pause(spider))
-            proxy = ProxyManager().get_url()
-            if proxy:
-                return proxy
-            raise RuntimeError("No proxies available after refresh.")
+    def _get_proxy(self, spider):
+        if not self._proxies:
+            self._refresh_cache(spider, force=True)
+        return self._proxies.pop() if self._proxies else None
+
+
+class _RequestsProxyClient:
+    """Default implementation that really calls jhao proxy_pool via requests."""
+
+    def __init__(self, api_base):
+        self.api = api_base.rstrip("/")
+
+    def fetch_batch(self, limit=50):
+        params = {
+            "type": "https",
+            "score": 5,
+            "anonymity": "high_anonymous",
+            "limit": limit,
+        }
+        r = requests.get(f"{self.api}/all", params=params, timeout=5)
+        r.raise_for_status()
+        return [f"http://{p}" if "://" not in p else p for p in r.json()]
+
+    def ban(self, ip_port):
+        requests.get(f"{self.api}/ban", params={"proxy": ip_port}, timeout=3)
 
 
 logstat_logger = logging.getLogger("scrapy.extensions.logstats")
@@ -176,25 +168,3 @@ class AllowImagesOffsiteMiddleware(OffsiteMiddleware):
             else:
                 allowed.append(r)
         return allowed
-
-
-class CustomRetryMiddleware(RetryMiddleware):
-    EXCEPTIONS_TO_RETRY = (
-        TimeoutError,
-        TCPTimedOutError,
-        DNSLookupError,
-        ConnectionRefusedError,
-        ResponseNeverReceived,
-        SSLError,
-    )
-
-    def process_exception(self, request, exception, spider):
-        if isinstance(exception, self.EXCEPTIONS_TO_RETRY):
-            spider.logger.warning(
-                f"Retrying {request.url} due to exception: {repr(exception)}"
-            )
-            ProxyManager().mark_failure(get_proxy_from_request(request))
-            request.meta["proxy"] = set_proxy_from_request(
-                request, ProxyManager().get_url()
-            )
-            return self._retry(request, exception, spider)

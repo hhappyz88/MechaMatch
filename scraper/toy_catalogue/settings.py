@@ -67,13 +67,13 @@ DOWNLOADER_MIDDLEWARES = {
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": None,
     "scrapy_user_agents.middlewares.RandomUserAgentMiddleware": 400,
     "scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware": 110,
-    # "scrapy.downloadermiddlewares.retry.RetryMiddleware": None,
-    # "toy_catalogue.middlewares.CustomRetryMiddleware": 450,
-    # "toy_catalogue.middlewares.DynamicProxyMiddleware": 500,
+    "toy_catalogue.middlewares.JhaoProxyMiddleware": 500,
     "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 543,
     "toy_catalogue.middlewares.AllowImagesOffsiteMiddleware": 542,
 }
-
+JHAO_PROXY_API_URL = "http://localhost:5010"
+JHAO_PROXY_TYPE = "https"  # or 'http' or 'socks5' if your pool supports it
+JHAO_PROXY_MIN_SCORE = 5  # adjust based on your pool's proxy quality
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
 # EXTENSIONS = {

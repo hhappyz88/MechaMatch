@@ -6,10 +6,10 @@ from typing import Generator, cast
 from scrapy import signals
 import json
 import os
-from toy_catalogue.proxies.proxy_manager import ProxyManager
 from toy_catalogue.spiders.rule_factory import SpiderConfig
 from config.config import DATA_ROOT
 import imghdr
+import random
 
 
 def canonicalise_url(url: str) -> str:
@@ -28,7 +28,7 @@ def create_spider(config: SpiderConfig) -> type[Spider]:
         start_urls = config["start_urls"]
         allowed_domains = [urlparse(url).netloc for url in start_urls]
         custom_settings = {
-            "JOBDIR": f"crawls/{config['site']}",
+            # "JOBDIR": f"crawls/{config['site']}",
             **config["playwright"],
         }
 
@@ -48,22 +48,22 @@ def create_spider(config: SpiderConfig) -> type[Spider]:
             return spider
 
         async def start(self):
-            if hasattr(self, "state") and "checkpoint" in self.state:
-                self.logger.info("Resuming from checkpoint...")
-                self.checkpoint_data = self.state["checkpoint"]
+            # if hasattr(self, "state") and "checkpoint" in self.state:
+            #     self.logger.info("Resuming from checkpoint...")
+            #     self.checkpoint_data = self.state["checkpoint"]
+            #     yield Request(
+            #         self.checkpoint_data["last_collection_page"],
+            #         callback=self.parse_collection,
+            #         meta={**config["pagination_meta"]},
+            #     )
+            # else:
+            self.logger.info("Starting fresh crawl...")
+            for url in self.start_urls:
                 yield Request(
-                    self.checkpoint_data["last_collection_page"],
+                    url,
                     callback=self.parse_collection,
                     meta={**config["pagination_meta"]},
                 )
-            else:
-                self.logger.info("Starting fresh crawl...")
-                for url in self.start_urls:
-                    yield Request(
-                        url,
-                        callback=self.parse_collection,
-                        meta={**config["pagination_meta"]},
-                    )
 
         def parse(self, response):
             self.logger.warning(
@@ -81,7 +81,7 @@ def create_spider(config: SpiderConfig) -> type[Spider]:
             response = cast(TextResponse, response)
 
             product_links = self._should_follow(config["product_strategy"](response))
-            # random.shuffle(product_links)
+            random.shuffle(product_links)
             yield from response.follow_all(
                 product_links,
                 callback=self.parse_product,
@@ -129,7 +129,7 @@ def create_spider(config: SpiderConfig) -> type[Spider]:
                 image_links = self._should_follow(
                     [response.urljoin(url) for url in image_urls]
                 )
-                # random.shuffle(image_links)
+                random.shuffle(image_links)
                 for i, img_url in enumerate(image_links):
                     # self.logger.debug(f"Found image {img_url}")
                     yield Request(
@@ -168,14 +168,7 @@ def create_spider(config: SpiderConfig) -> type[Spider]:
             else:
                 request = response_or_request.request
 
-            new_meta = request.meta.copy()
-            if request.meta.get("playwright") is True:
-                proxy = request.meta["proxy"].get("proxy")
-            else:
-                proxy = request.meta.get("proxy")
-            ProxyManager().mark_failure(proxy)
-            # new_meta["proxy"] = ProxyManager().get_url()  # Optional: get a new proxy
-            return request.replace(dont_filter=True, meta=new_meta)
+            return request.replace(dont_filter=True)
 
         def is_bad_response(self, response):
             # Check for Cloudflare captcha, login redirect, etc.
