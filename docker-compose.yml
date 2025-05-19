@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  scraper:
+    build: .
+    volumes:
+      - ./scraper:/app/scraper
+    working_dir: /app/scraper
+    environment:
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+    command: ["conda", "run", "-n", "mecha_match", "python", "run_spiders.py"]

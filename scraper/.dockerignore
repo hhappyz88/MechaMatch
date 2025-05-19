@@ -1,0 +1,7 @@
+crawls/*
+!crawls/.gitkeep
+
+data/*
+
+
+config/proxies.json
