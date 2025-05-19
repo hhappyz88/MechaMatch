@@ -14,7 +14,7 @@ jobs:
         shell: bash -l {0}
         run: |
           cd scraper
-          
+
       - name: Checkout Code
         uses: actions/checkout@v4
 
@@ -25,7 +25,7 @@ jobs:
           activate-environment: mecha_match
           environment-file: environment.yml
           auto-activate-base: false
-          python-version: 3.9
+          python-version: 3.11
 
       - name: Run pre-commit hooks
         shell: bash -l {0}

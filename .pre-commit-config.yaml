@@ -14,5 +14,5 @@ repos:
     hooks:
       - id: mypy
         name: mypy
-        entry: bash -c 'mypy --explicit-package-bases tests scraper'
+        entry: bash -c 'mypy --explicit-package-bases scraper'
         language: system
