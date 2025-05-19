@@ -5,7 +5,6 @@ services:
     build: .
     volumes:
       - ./scraper:/app/scraper
-      - ./data:/app/data
     working_dir: /app/scraper
     environment:
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright

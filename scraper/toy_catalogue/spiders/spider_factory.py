@@ -27,7 +27,10 @@ def create_spider(config: SpiderConfig) -> type[Spider]:
         name = config["site"]
         start_urls = config["start_urls"]
         allowed_domains = [urlparse(url).netloc for url in start_urls]
-        custom_settings = {"JOBDIR": f"crawls/{config['site']}"}
+        custom_settings = {
+            "JOBDIR": f"crawls/{config['site']}",
+            **config["playwright"],
+        }
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)

@@ -15,7 +15,9 @@ SPIDER_MODULES = ["toy_catalogue.spiders"]
 NEWSPIDER_MODULE = "toy_catalogue.spiders"
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 ROBOTSTXT_OBEY = False
-
+PLAYWRIGHT_LAUNCH_OPTIONS = {
+    "timeout": 10000,  # Example: 60 seconds
+}
 #################################################################################
 ############################### RETRY ###########################################
 # Retry on failed proxies
@@ -64,29 +66,13 @@ DOWNLOADER_MIDDLEWARES = {
     "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": None,
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": None,
     "scrapy_user_agents.middlewares.RandomUserAgentMiddleware": 400,
-    # "scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware": 110,
+    "scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware": 110,
     # "scrapy.downloadermiddlewares.retry.RetryMiddleware": None,
     # "toy_catalogue.middlewares.CustomRetryMiddleware": 450,
     # "toy_catalogue.middlewares.DynamicProxyMiddleware": 500,
     "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 543,
     "toy_catalogue.middlewares.AllowImagesOffsiteMiddleware": 542,
 }
-# DOWNLOAD_HANDLERS = {
-#     "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-#     "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
-# }
-
-###########################################################################
-############################ PLAYWRIGHT ###################################
-PLAYWRIGHT_BROWSER_TYPE = "chromium"
-PLAYWRIGHT_LAUNCH_OPTIONS = {
-    "headless": False,  # Show the browser (can help bypass bot detection)
-    # Optional: add slow_mo to slow down actions for realism
-    # "slow_mo": 100,
-}
-
-SCRAPE_PLAYWRIGHT_ENABLED = True
-PLAYWRIGHT_MAX_CONTEXTS = 8
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
