@@ -7,9 +7,10 @@ from scrapy import signals
 import json
 import os
 from toy_catalogue.spiders.rule_factory import SpiderConfig
-from config.config import DATA_ROOT
+from config.config import SAVE_ROOT
 import imghdr
 import random
+from toy_catalogue.utils.settings_manager import update_job_list
 
 
 def canonicalise_url(url: str) -> str:
@@ -28,15 +29,15 @@ def create_spider(config: SpiderConfig) -> type[Spider]:
         start_urls = config["start_urls"]
         allowed_domains = [urlparse(url).netloc for url in start_urls]
         custom_settings = {
-            # "JOBDIR": f"crawls/{config['site']}",
             **config["playwright"],
         }
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, mode: str = "fresh", *args, **kwargs):
             super().__init__(*args, **kwargs)
-            self.seen_urls = set()
-            self.checkpoint_data = {}
-
+            self.seen_urls: set = set()
+            self.checkpoint_data: dict[str, str] = {}
+            self.mode = mode
+            self.start_time = datetime.now(timezone.utc)
             # silence_scrapy_logs()
 
         @classmethod
@@ -48,22 +49,22 @@ def create_spider(config: SpiderConfig) -> type[Spider]:
             return spider
 
         async def start(self):
-            # if hasattr(self, "state") and "checkpoint" in self.state:
-            #     self.logger.info("Resuming from checkpoint...")
-            #     self.checkpoint_data = self.state["checkpoint"]
-            #     yield Request(
-            #         self.checkpoint_data["last_collection_page"],
-            #         callback=self.parse_collection,
-            #         meta={**config["pagination_meta"]},
-            #     )
-            # else:
-            self.logger.info("Starting fresh crawl...")
-            for url in self.start_urls:
+            if hasattr(self, "state") and "checkpoint" in self.state:
+                self.logger.info("Resuming from checkpoint...")
+                self.checkpoint_data = self.state["checkpoint"]
                 yield Request(
-                    url,
+                    self.checkpoint_data["last_collection_page"],
                     callback=self.parse_collection,
                     meta={**config["pagination_meta"]},
                 )
+            else:
+                self.logger.info("Starting fresh crawl...")
+                for url in self.start_urls:
+                    yield Request(
+                        url,
+                        callback=self.parse_collection,
+                        meta={**config["pagination_meta"]},
+                    )
 
         def parse(self, response):
             self.logger.warning(
@@ -108,7 +109,12 @@ def create_spider(config: SpiderConfig) -> type[Spider]:
             try:
                 # Create folder for domain
                 page_id = urlparse(response.url).path.replace("/", "_").lstrip("_")
-                folder_path = os.path.join(DATA_ROOT, config["site"], page_id)
+                folder_path = os.path.join(
+                    SAVE_ROOT,
+                    config["site"],
+                    self.start_time.strftime("%Y%m%d_%H%M%S"),
+                    page_id,
+                )
                 os.makedirs(folder_path, exist_ok=True)
 
                 # Save the HTML content as a file
@@ -197,14 +203,14 @@ def create_spider(config: SpiderConfig) -> type[Spider]:
             # This will be called when the spider is closed
             self.state["checkpoint"] = self.checkpoint_data
             self.logger.info("Spider closed: %s", spider.name)
-            directory = f"data/{config['site']}"
-            if os.path.isdir(directory):
-                folder_count = sum(
-                    os.path.isdir(os.path.join(directory, entry))
-                    for entry in os.listdir(directory)
-                )
 
-                self.logger.info(f"Scraped {folder_count} products")
-                # shutil.rmtree(f"data/{self.name}")
+            duration = datetime.now(timezone.utc) - self.start_time
+            hours, remainder = divmod(int(duration.total_seconds()), 3600)
+            minutes, seconds = divmod(remainder, 60)
+            self.logger.info(f"Run took {hours:02}h {minutes:02}mins {seconds:02}s")
+
+            update_job_list(
+                self, {"name": self.name, "start_time": self.start_time.isoformat()}
+            )
 
     return GenericSpider

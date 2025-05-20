@@ -67,7 +67,6 @@ DOWNLOADER_MIDDLEWARES = {
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": None,
     "scrapy_user_agents.middlewares.RandomUserAgentMiddleware": 400,
     "scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware": 110,
-    "toy_catalogue.middlewares.JhaoProxyMiddleware": 500,
     "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 543,
     "toy_catalogue.middlewares.AllowImagesOffsiteMiddleware": 542,
 }
@@ -105,7 +104,7 @@ DUPEFILTER_CLASS = "scrapy.dupefilters.RFPDupeFilter"
 # Disable Telnet Console (enabled by default)
 TELNETCONSOLE_ENABLED = True
 LOG_STDOUT = True
-LOG_LEVEL = "DEBUG"
+LOG_LEVEL = "INFO"
 
 
 def silence_scrapy_logs():
