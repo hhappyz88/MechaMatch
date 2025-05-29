@@ -1,21 +1,14 @@
 from scrapy.spiders import Spider
 from scrapy.http import Request, Response, TextResponse
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 from datetime import datetime, timezone
-from typing import Generator, cast
+from typing import AsyncGenerator
 from scrapy import signals
-import json
-import os
-from toy_catalogue.spiders.rule_factory import SpiderConfig
-from config.config import SAVE_ROOT
 import imghdr
-import random
-from toy_catalogue.utils.settings_manager import update_job_list
 
-
-def canonicalise_url(url: str) -> str:
-    parsed = urlparse(url)
-    return urlunparse(parsed._replace(query=""))
+from toy_catalogue.utils.url import canonicalise_url
+from toy_catalogue.spiders.core.strategy_factory import build_strategy
+from toy_catalogue.config.schema import SiteConfig, StrategyConfig, GraphConfig
 
 
 def is_valid_image(image_data):
@@ -23,21 +16,27 @@ def is_valid_image(image_data):
     return img_type in ["jpeg", "png", "gif", "bmp", "webp"]
 
 
-def create_spider(config: SpiderConfig) -> type[Spider]:
+def create_spider(config: SiteConfig) -> type[Spider]:
+    config = SiteConfig.model_validate(config)
+    traversal = GraphConfig.model_validate(config.traversal)
+
     class GenericSpider(Spider):
-        name = config["site"]
-        start_urls = config["start_urls"]
+        name = config.site
+        start_urls = list(config.start_urls.values())
+        parse_methods = list(config.start_urls.keys())
         allowed_domains = [urlparse(url).netloc for url in start_urls]
-        custom_settings = {
-            **config["playwright"],
-        }
+        # custom_settings = {
+        #     **config["playwright"],
+        # }
 
         def __init__(self, mode: str = "fresh", *args, **kwargs):
             super().__init__(*args, **kwargs)
-            self.seen_urls: set = set()
+            self.seen_urls: set[str] = set()
             self.checkpoint_data: dict[str, str] = {}
-            self.mode = mode
+            # self.mode = mode
             self.start_time = datetime.now(timezone.utc)
+            mode_config = StrategyConfig.model_validate({"name": mode, "params": {}})
+            self.strategy = build_strategy(mode_config, traversal)
             # silence_scrapy_logs()
 
         @classmethod
@@ -48,120 +47,126 @@ def create_spider(config: SpiderConfig) -> type[Spider]:
             crawler.signals.connect(spider.spider_closed, signal=signals.spider_closed)
             return spider
 
-        async def start(self):
-            if hasattr(self, "state") and "checkpoint" in self.state:
-                self.logger.info("Resuming from checkpoint...")
-                self.checkpoint_data = self.state["checkpoint"]
+        async def start(self) -> AsyncGenerator[Request, None]:
+            for url, method in zip(self.start_urls, self.parse_methods):
                 yield Request(
-                    self.checkpoint_data["last_collection_page"],
-                    callback=self.parse_collection,
-                    meta={**config["pagination_meta"]},
+                    url,
+                    callback=self.strategy.make_callback(),
+                    meta={"callback": method},
                 )
-            else:
-                self.logger.info("Starting fresh crawl...")
-                for url in self.start_urls:
-                    yield Request(
-                        url,
-                        callback=self.parse_collection,
-                        meta={**config["pagination_meta"]},
-                    )
+            # if hasattr(self, "state") and "checkpoint" in self.state:
+            #     self.logger.info("Resuming from checkpoint...")
+            #     self.checkpoint_data = self.state["checkpoint"]
+            #     yield Request(
+            #         self.checkpoint_data["last_collection_page"],
+            #         callback=self.parse_collection,
+            #         meta={**config["pagination_meta"]},
+            #     )
+            # else:
+            #     self.logger.info("Starting fresh crawl...")
+            #     for url in self.start_urls:
+            #         yield Request(
+            #             url,
+            #             callback=self.parse_collection,
+            #             meta={**config["pagination_meta"]},
+            #         )
 
-        def parse(self, response):
-            self.logger.warning(
-                "Default parse() called. You may have forgotten to set callback."
-            )
+        # def parse(self, response) -> Generator[Request, None, None]:
+        #     self.logger.warning(
+        #         "Default parse() called. You may have forgotten to set callback."
+        #     )
 
-        def parse_collection(
-            self, response: Response
-        ) -> Generator[Request, None, None]:
-            if self.is_bad_response(response) or not self._is_webpage(response):
-                yield self.retry_request(response)
-                return
+        # def parse_collection(
+        #     self, response: Response
+        # ) -> Generator[Request, None, None]:
+        #     if self.is_bad_response(response) or not self._is_webpage(response):
+        #         yield self.retry_request(response)
+        #         return
 
-            self.logger.info(f"Currently on Page {response.url}")
-            response = cast(TextResponse, response)
+        # self.logger.info(f"Currently on Page {response.url}")
+        # response = cast(TextResponse, response)
 
-            product_links = self._should_follow(config["product_strategy"](response))
-            random.shuffle(product_links)
-            yield from response.follow_all(
-                product_links,
-                callback=self.parse_product,
-                priority=50,
-                meta={**config["product_meta"]},
-            )
+        # product_links = self._should_follow(config["product_strategy"](response))
+        # random.shuffle(product_links)
+        # yield from response.follow_all(
+        #     product_links,
+        #     callback=self.parse_product,
+        #     priority=50,
+        #     meta={**config["product_meta"]},
+        # )
 
-            next_page = config["pagination_strategy"](response)
-            if next_page:
-                self.logger.info(f"Next page is {next_page}")
-                yield response.follow(
-                    next_page,
-                    callback=self.parse_collection,
-                    meta={**config["pagination_meta"]},
-                )
-                self.checkpoint_data["last_collection_page"] = str(response.url)
+        # next_page = config["pagination_strategy"](response)
+        # if next_page:
+        #     self.logger.info(f"Next page is {next_page}")
+        #     yield response.follow(
+        #         next_page,
+        #         callback=self.parse_collection,
+        #         meta={**config["pagination_meta"]},
+        #     )
+        #     self.checkpoint_data["last_collection_page"] = str(response.url)
 
-        def parse_product(self, response: Response) -> Generator[Request, None, None]:
-            if self.is_bad_response(response) or not self._is_webpage(response):
-                yield self.retry_request(response)
-                return
+        # def parse_product(self, response: Response) -> Generator[Request, None, None]:
+        #     if self.is_bad_response(response) or not self._is_webpage(response):
+        #         yield self.retry_request(response)
+        #         return
 
-            response = cast(TextResponse, response)
-            try:
-                # Create folder for domain
-                page_id = urlparse(response.url).path.replace("/", "_").lstrip("_")
-                folder_path = os.path.join(
-                    SAVE_ROOT,
-                    config["site"],
-                    self.start_time.strftime("%Y%m%d_%H%M%S"),
-                    page_id,
-                )
-                os.makedirs(folder_path, exist_ok=True)
+        #     response = cast(TextResponse, response)
+        #     try:
+        #         # Create folder for domain
+        #         page_id = urlparse(response.url).path.replace("/", "_").lstrip("_")
+        #         folder_path = os.path.join(
+        #             SAVE_ROOT,
+        #             config.site,
+        #             self.start_time.strftime("%Y%m%d_%H%M%S"),
+        #             page_id,
+        #         )
+        #         os.makedirs(folder_path, exist_ok=True)
 
-                # Save the HTML content as a file
-                with open(os.path.join(folder_path, "page.html"), "wb") as f:
-                    f.write(response.body)
-                metadata = {
-                    "url": response.url,
-                    "title": response.css("title::text").get(default="").strip(),
-                    "time": datetime.now(timezone.utc).isoformat(),
-                    "encoding": response.encoding,
-                }
-                meta_path = os.path.join(folder_path, "metadata.json")
-                with open(meta_path, "w", encoding="utf-8") as f:
-                    json.dump(metadata, f, indent=2)
-                self.logger.info(f"Saved HTML for {response.url}")
+        #         # Save the HTML content as a file
+        #         with open(os.path.join(folder_path, "page.html"), "wb") as f:
+        #             f.write(response.body)
+        #         metadata = {
+        #             "url": response.url,
+        #             "title": response.css("title::text").get(default="").strip(),
+        #             "time": datetime.now(timezone.utc).isoformat(),
+        #             "encoding": response.encoding,
+        #         }
+        #         meta_path = os.path.join(folder_path, "metadata.json")
+        #         with open(meta_path, "w", encoding="utf-8") as f:
+        #             json.dump(metadata, f, indent=2)
+        #         self.logger.info(f"Saved HTML for {response.url}")
 
-                image_urls = response.css(f"{config['image_format']}").getall()
-                image_links = self._should_follow(
-                    [response.urljoin(url) for url in image_urls]
-                )
-                random.shuffle(image_links)
-                for i, img_url in enumerate(image_links):
-                    # self.logger.debug(f"Found image {img_url}")
-                    yield Request(
-                        url=img_url,
-                        callback=self.save_image,
-                        meta={"folder_path": folder_path, "index": i},
-                        priority=1000,
-                        dont_filter=True,
-                    )
-                self.checkpoint_data["last_product"] = str(response.url)
-            except Exception as e:
-                self.logger.error(f"Error in parse_product: {e}")
-                return
+        #         image_urls = response.css(f"{config['image_format']}").getall()
+        #         image_links = self._should_follow(
+        #             [response.urljoin(url) for url in image_urls]
+        #         )
+        #         random.shuffle(image_links)
+        #         for i, img_url in enumerate(image_links):
+        #             # self.logger.debug(f"Found image {img_url}")
+        #             yield Request(
+        #                 url=img_url,
+        #                 callback=self.save_image,
+        #                 meta={"folder_path": folder_path, "index": i},
+        #                 priority=1000,
+        #                 dont_filter=True,
+        #             )
+        #         self.checkpoint_data["last_product"] = str(response.url)
+        #     except Exception as e:
+        #         self.logger.error(f"Error in parse_product: {e}")
+        #         return
 
-        def save_image(self, response):
-            if not is_valid_image(response.body):
-                yield self.retry_request(response)
-            path = response.meta["folder_path"]
-            index = response.meta["index"]
-            ext = os.path.splitext(urlparse(response.url).path)[-1] or ".jpg"
-            self.logger.debug(
-                f"Saved Image for {response.url} under {path} as image_{index}"
-            )
-            os.makedirs(os.path.join(path, "images"), exist_ok=True)
-            with open(os.path.join(path, "images", f"image_{index}{ext}"), "wb") as f:
-                f.write(response.body)
+        # def save_image(self, response):
+        #     if not is_valid_image(response.body):
+        #         yield self.retry_request(response)
+        #     path = response.meta["folder_path"]
+        #     index = response.meta["index"]
+        #     ext = os.path.splitext(urlparse(response.url).path)[-1] or ".jpg"
+        #     self.logger.debug(
+        #         f"Saved Image for {response.url} under {path} as image_{index}"
+        #     )
+        #     os.makedirs(os.path.join(path, "images"), exist_ok=True)
+        #     with open(os.path.join(path, "images", f"image_{index}{ext}"), "wb") as f:
+        #         f.write(response.body)
 
         def errback_retry(self, failure):
             request = failure.request
@@ -201,7 +206,7 @@ def create_spider(config: SpiderConfig) -> type[Spider]:
 
         def spider_closed(self, spider):
             # This will be called when the spider is closed
-            self.state["checkpoint"] = self.checkpoint_data
+            # self.state["checkpoint"] = self.checkpoint_data
             self.logger.info("Spider closed: %s", spider.name)
 
             duration = datetime.now(timezone.utc) - self.start_time
@@ -209,8 +214,8 @@ def create_spider(config: SpiderConfig) -> type[Spider]:
             minutes, seconds = divmod(remainder, 60)
             self.logger.info(f"Run took {hours:02}h {minutes:02}mins {seconds:02}s")
 
-            update_job_list(
-                self, {"name": self.name, "start_time": self.start_time.isoformat()}
-            )
+            # update_job_list(
+            #     self, {"name": self.name, "start_time": self.start_time.isoformat()}
+            # )
 
     return GenericSpider

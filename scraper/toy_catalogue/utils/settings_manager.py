@@ -2,7 +2,7 @@ from scrapy.utils.project import get_project_settings
 from datetime import datetime, timezone
 import os
 import json
-from config.config import JOB_ROOT
+from toy_catalogue.config.parameters import JOB_ROOT
 
 
 def update_job_list(spider, metadata):

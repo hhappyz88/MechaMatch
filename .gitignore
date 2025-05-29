@@ -36,5 +36,5 @@ Thumbs.db
 
 # scraper
 scraper/config/proxies.json
-scraper/config/scrapy_rules
+scraper/toy_catalogue/config/scrapy_rules/
 scraper/crawls/

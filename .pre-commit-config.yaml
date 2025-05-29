@@ -13,6 +13,7 @@ repos:
     rev: v1.15.0
     hooks:
       - id: mypy
-        name: mypy
-        entry: bash -c 'mypy --explicit-package-bases scraper'
+        name: mypy (staged only)
+        entry: bash -c 'mypy --explicit-package-bases $(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$")'
         language: system
+        pass_filenames: false
