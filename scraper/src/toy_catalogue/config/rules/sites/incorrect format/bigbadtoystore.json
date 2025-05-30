@@ -1,0 +1,12 @@
+{
+  "start_url": "https://www.bigbadtoystore.com",
+  "collection_le": {
+    "allow": "/Search\\?SearchText=*&PageIndex=[0-9]+&PageSize=100",
+    "deny": []
+  },
+  "page_le": {
+    "allow": [],
+    "deny": []
+  },
+  "image_css": []
+}

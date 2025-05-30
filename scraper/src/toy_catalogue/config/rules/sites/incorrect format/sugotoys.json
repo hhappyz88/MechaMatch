@@ -1,0 +1,18 @@
+[
+    {   
+        "link_extractor": {
+            "allow": ["/shop/page/[0-9]+/$"],
+            "deny": ["\\?.*"]
+        },
+        "callback": "parse_page",
+        "follow": true
+    },
+    {
+        "link_extractor": {
+            "allow": ["/product/[a-zA-Z0-9\\-]+/$"],
+            "deny": ["\\?.*"]
+        },
+        "callback": "parse_item",
+        "follow": false
+    }
+]

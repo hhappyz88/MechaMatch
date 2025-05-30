@@ -1,0 +1,12 @@
+{
+  "start_url": "https://leapingpandahobbies.com",
+  "collection_le": {
+    "allow": "/search\\?page=[0-9]+&q=*",
+    "deny": []
+  },
+  "page_le": {
+    "allow": [],
+    "deny": []
+  },
+  "image_css": []
+}

@@ -1,0 +1,12 @@
+{
+  "start_url": "http://www.hobbyaction.net",
+  "collection_le": {
+    "allow": "/modeling/gundam/page[0-9]+.html/",
+    "deny": []
+  },
+  "page_le": {
+    "allow": [],
+    "deny": []
+  },
+  "image_css": []
+}

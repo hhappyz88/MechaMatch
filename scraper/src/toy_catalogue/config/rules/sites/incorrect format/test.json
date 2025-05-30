@@ -1,0 +1,132 @@
+[
+    {
+      "name": "A-Z Toy Hobby",
+      "base_url": "https://aztoyhobby.com",
+      "catalogue_format": "/collections/all?page={index}"
+    },
+    {
+      "name": "BigBadToyStore",
+      "base_url": "https://www.bigbadtoystore.com",
+      "catalogue_format": "/Search?SearchText=*&PageIndex={index}&PageSize=100"
+    },
+    {
+      "name": "Bits & Bobs Toy Shop",
+      "base_url": "https://bitsandbobstoyshop.com",
+      "catalogue_format": "/collections/all?page={index}"
+    },
+    {
+      "name": "Burbank’s House of Hobbies",
+      "base_url": "https://houseofhobbies.com",
+      "catalogue_format": "/collections/gundam-and-anime?page={index}"
+    },
+    {
+      "name": "G2B Gundam Store",
+      "base_url": "https://g2bgundamstore.com",
+      "catalogue_format": "/collections/all?page={index}"
+    },
+    {
+      "name": "Galactic Toys",
+      "base_url": "https://galactictoys.com",
+      "catalogue_format": "/search?page={index}&q=*"
+    },
+    {
+      "name": "Glacier Hobbies",
+      "base_url": "https://www.glacierhobbies.com",
+      "catalogue_format": "/search?page={index}&q=*"
+    },
+    {
+      "name": "Gundam Place Store",
+      "base_url": "https://www.gundamplacestore.com",
+      "catalogue_format": "/search?page={index}&q=*"
+    },
+    {
+      "name": "Gundam Planet",
+      "base_url": "http://www.gundamplanet.com",
+      "catalogue_format": "/search?page={index}&q=*"
+    },
+    {
+      "name": "GundamPros",
+      "base_url": "https://gundampros.shop",
+      "catalogue_format": "/page/{index}/?s&post_type=product"
+    },
+    {
+      "name": "Gunnzo",
+      "base_url": "https://gunnzo.com",
+      "catalogue_format": "/search?type=product&q=**&page={index}"
+    },
+    {
+      "name": "GunplaStyle",
+      "base_url": "https://www.gunplastyle.com",
+      "catalogue_format": "/search?page={index}&q=*"
+    },
+    {
+      "name": "Hobby Action",
+      "base_url": "http://www.hobbyaction.net",
+      "catalogue_format": "/modeling/gundam/page{index}.html/"
+    },
+    {
+      "name": "ImpulseHobbies",
+      "base_url": "https://impulsehobbies.com",
+      "catalogue_format": "/search?page={index}&q=*&type=product"
+    },
+    {
+      "name": "LA Scale Model",
+      "base_url": "https://lascalemodel.com",
+      "catalogue_format": "/search?page={index}&q=*"
+    },
+    {
+      "name": "Leaping Panda Hobbies",
+      "base_url": "https://leapingpandahobbies.com",
+      "catalogue_format": "/search?page={index}&q=*"
+    },
+    {
+      "name": "Mecha Warehouse",
+      "base_url": "https://mechawarehouse.com",
+      "catalogue_format": "/collections/frontpage?page={index}"
+    },
+    {
+      "name": "Midwest Hobby and Craft",
+      "base_url": "https://midwesthobbyandcraft.com",
+      "catalogue_format": "/search?page={index}&q=*"
+    },
+    {
+      "name": "Mountain State Models",
+      "base_url": "https://mountainstatemodels.com",
+      "catalogue_format": "/shop/ols/all?page={index}&sortOption=descend_by_created_at"
+    },
+    {
+      "name": "Newtype",
+      "base_url": "https://newtypehq.com",
+      "catalogue_format": "/search?page={index}&q=*"
+    },
+    {
+      "name": "Robots 4 Less",
+      "base_url": "http://www.r4lus.com",
+      "catalogue_format": "/search?page={index}&q=*"
+    },
+    {
+      "name": "RobotKai",
+      "base_url": "https://robotkai.com",
+      "catalogue_format": "/search?page={index}&q=*"
+    },
+    {
+      "name": "The Gunpla Hermit’s Shop",
+      "base_url": "https://thegunplahermitsshop.com",
+      "catalogue_format": "/search?page={index}&q=*"
+    },
+    {
+      "name": "Toy Arena",
+      "base_url": "https://toyarena.com",
+      "catalogue_format": "/search?page={index}&q=*"
+    },
+    {
+      "name": "USA Gundam Store",
+      "base_url": "http://www.usagundamstore.com",
+      "catalogue_format": "/collections/shop?view=products&q=*&page={index}"
+    },
+    {
+      "name": "Vulcan Hobby",
+      "base_url": "https://www.vulcanhobby.com",
+      "catalogue_format": "/collections/all?page={index}"
+    }
+  ]

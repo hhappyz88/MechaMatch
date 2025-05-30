@@ -1,0 +1,33 @@
+[project]
+name = "toy_catalogue"
+version = "0.1.0"
+description = "Modular web scraper"
+authors = [{ name = "Henry Zhang", email = "hh.zhang520@email.com" }]
+requires-python = ">=3.11"
+dependencies = [
+    "scrapy>=2.12.0",
+    "pydantic>=2.0",
+    # add other project dependencies here
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "mypy", 
+    "pre-commit",
+    # dev-only dependencies
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools]
+include-package-data = true
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# Optional: CLI entry point
+[project.scripts]
+run-spiders = "toy_catalogue.scripts.run_spiders:app"
