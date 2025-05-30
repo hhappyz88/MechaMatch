@@ -1,16 +1,31 @@
 from scrapy.http import Response, TextResponse
-from toy_catalogue.spiders.extractors._base import BaseExtractor
-from toy_catalogue.spiders.extractors._base import ExtractorParam
+from toy_catalogue.spiders.extractors._base import BaseExtractor, ExtractorParam
 from itertools import product
 
 
-class CssGetAllParams(ExtractorParam):
+class CssParams(ExtractorParam):
     selectors: list[str]
     attrs: list[str]
 
 
+class CssGetExtractor(BaseExtractor):
+    def __init__(self, params: CssParams) -> None:
+        self.css_selector = params.selectors
+        self.attr = params.attrs
+
+    def extract(self, response: Response) -> list[str]:
+        if not isinstance(response, TextResponse):
+            raise TypeError(f"Response {response} is not Type TextResponse")
+        results = []
+        for selector, attr in product(self.css_selector, self.attr):
+            val = response.css(f"{selector}::attr({attr})").get()
+            if val:
+                results.append(response.urljoin(val))
+        return results
+
+
 class CssGetAllExtractor(BaseExtractor):
-    def __init__(self, params: CssGetAllParams) -> None:
+    def __init__(self, params: CssParams) -> None:
         self.css_selector = params.selectors
         self.attr = params.attrs
 
