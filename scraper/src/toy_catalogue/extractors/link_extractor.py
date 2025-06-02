@@ -11,16 +11,15 @@ class LEParams(ExtractorParam):
     deny: Optional[str | list[str]] = None
     allow_domains: Optional[str | list[str]] = None
     deny_domains: Optional[str | list[str]] = None
-    deny_extensions: Optional[str | list[str]] = None
+    deny_extensions: Optional[str | list[str]] = []
     restrict_xpaths: Optional[str | list[str]] = None
     restrict_css: Optional[str | list[str]] = None
     restrict_text: Optional[str | list[str]] = None
     tags: Optional[str | list[str]] = None
-    attrs: Optional[list[str]] = None
-    canonicalize: Optional[bool] = None
-    unique: Optional[bool] = None
+    attrs: Optional[list[str]] = ["href", "data-href"]
+    canonicalize: Optional[bool] = True
+    unique: Optional[bool] = True
     process_value: Optional[Callable] = None
-    strip: Optional[bool] = None
 
 
 class LinkExtractor(BaseExtractor):

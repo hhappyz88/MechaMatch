@@ -1,16 +1,14 @@
 from abc import ABC
 from scrapy.http import Request, Response
 from typing import Callable
-from toy_catalogue.core.handler_factory import build_handler_graph
 from toy_catalogue.utils.url import canonicalise_url
-from toy_catalogue.schema.config_schema import GraphConfig
 import logging
+from toy_catalogue.core.handler_factory import HandlerGraph
 
 
 class BaseCrawlStrategy(ABC):
-    def __init__(self, handler_configs: GraphConfig) -> None:
-        self.graph = build_handler_graph(handler_configs)
-        print(self.graph)
+    def __init__(self, traversal_graph: HandlerGraph) -> None:
+        self.graph = traversal_graph
         self.seen: set[str] = set()
 
     def make_callback(self) -> Callable[[Response], list[Request]]:

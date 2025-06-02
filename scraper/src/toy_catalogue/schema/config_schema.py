@@ -25,7 +25,6 @@ class ExtractorConfig(BaseModel):
 class NodeConfig(BaseModel):
     extractors: list[ExtractorConfig]
     callbacks: list[str] = []
-    recurse: bool = False
 
 
 class GraphConfig(RootModel[dict[str, list[NodeConfig]]]):
