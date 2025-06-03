@@ -2,8 +2,12 @@ from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 import typer
 from pathlib import Path
-from toy_catalogue.config_manager import ConfigManager
-from toy_catalogue.config_spec import FileConfig, PackageConfig, UrlConfig
+from toy_catalogue.config.config_manager import ConfigManager
+from toy_catalogue.config.schema.external.config import (
+    FileConfig,
+    PackageConfig,
+    UrlConfig,
+)
 from toy_catalogue.utils.session_manager import SessionManager
 from toy_catalogue.spiders.generic_spider import GenericSpider
 

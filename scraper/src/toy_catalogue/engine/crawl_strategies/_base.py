@@ -3,13 +3,16 @@ from scrapy.http import Request, Response
 from typing import Callable
 from toy_catalogue.utils.url import canonicalise_url
 import logging
-from toy_catalogue.core.handler_factory import HandlerGraph
+from ..graph import TraversalGraph
 
 
 class BaseCrawlStrategy(ABC):
-    def __init__(self, traversal_graph: HandlerGraph) -> None:
+    graph: TraversalGraph
+    seen: set[str]
+
+    def __init__(self, traversal_graph: TraversalGraph) -> None:
         self.graph = traversal_graph
-        self.seen: set[str] = set()
+        self.seen = set()
 
     def make_callback(self) -> Callable[[Response], list[Request]]:
         def _callback(response: Response) -> list[Request]:

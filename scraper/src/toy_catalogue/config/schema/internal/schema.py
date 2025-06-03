@@ -1,10 +1,11 @@
+from __future__ import annotations
 from pydantic import BaseModel, RootModel, Field, field_validator, ConfigDict
 from typing import Any
-from toy_catalogue.extractors._base import ExtractorParam
-from toy_catalogue.core.extractor_registry import EXTRACTOR_REGISTRY
+
+from toy_catalogue.engine.extractors import EXTRACTOR_REGISTRY, ExtractorParam
 
 
-class ExtractorConfig(BaseModel):
+class ExtractorSchema(BaseModel):
     class_: str = Field(..., alias="class")
     params: ExtractorParam
 
@@ -22,22 +23,22 @@ class ExtractorConfig(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-class NodeConfig(BaseModel):
-    extractors: list[ExtractorConfig]
+class NodeSchema(BaseModel):
+    extractors: list[ExtractorSchema]
     callbacks: list[str] = []
 
 
-class GraphConfig(RootModel[dict[str, list[NodeConfig]]]):
-    def get_node(self, node: str) -> list[NodeConfig]:
+class GraphSchema(RootModel[dict[str, list[NodeSchema]]]):
+    def get_node(self, node: str) -> list[NodeSchema]:
         return self.root.get(node, [])
 
 
 class SiteConfig(BaseModel):
     site: str
     start_urls: dict[str, str]
-    traversal: GraphConfig
+    traversal: GraphSchema
 
 
 class StrategyConfig(BaseModel):
     name: str
-    params: dict
+    # params: dict

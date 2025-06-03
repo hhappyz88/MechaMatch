@@ -1,18 +1,18 @@
 from __future__ import annotations
 from pathlib import Path
-from datetime import datetime
 from typing import Optional, Any
 from pydantic import BaseModel
 
-from toy_catalogue.schema.config_schema import SiteConfig
+from toy_catalogue.config.schema.internal.schema import SiteConfig
 from toy_catalogue.config.parameters import SESSION_BASE_DIR
+from datetime import datetime, timezone
 
 
 class SessionMeta(BaseModel):
     session_id: str
     site: str
     mode: str
-    timestamp: str
+    timestamp: datetime
     config: SiteConfig
     tags: list[str] = []
     item_count: Optional[int] = None
@@ -48,9 +48,10 @@ class SessionManager:
         tags: list[str] = [],
         parent_session_id: Optional[str] = None,
     ) -> SessionContext:
-        now = datetime.now().strftime("%Y%m%d_%H%M")
+        now = datetime.now(timezone.utc)
+        now_str = now.strftime("%Y-%m-%dT%H-%M-%S")
         tag_str = "_".join(tags) if tags else "untagged"
-        session_id = f"{now}_{config.site}_{tag_str}"
+        session_id = f"{now_str}_{config.site}_{tag_str}"
         session_dir = SESSION_BASE_DIR / session_id
         session_dir.mkdir(parents=True, exist_ok=False)
 

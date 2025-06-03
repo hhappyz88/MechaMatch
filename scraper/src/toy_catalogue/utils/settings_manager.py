@@ -1,11 +1,13 @@
 from scrapy.utils.project import get_project_settings
+from scrapy.spiders import Spider
 from datetime import datetime, timezone
 import os
 import json
 from toy_catalogue.config.parameters import JOB_ROOT
+from typing import Any, Optional
 
 
-def update_job_list(spider, metadata):
+def update_job_list(spider: Spider, metadata: dict[str, Any]):
     path = os.path.join(JOB_ROOT, spider.name, f"{spider.name}.json")
     if os.path.isfile(path):
         with open(path, "r") as f:
@@ -18,16 +20,17 @@ def update_job_list(spider, metadata):
         json.dump(data, f, indent=2)
 
 
-def list_jobs(site=None):
+def list_jobs(site: Optional[str] = None) -> list[tuple[str, str]]:
     try:
         if site:
             base = os.path.join(JOB_ROOT, f"{site}", f"{site}.json")
             print(base)
-        with open(base, "r") as f:
-            meta = json.load(f)
-            return [(item["name"], item["start_time"]) for item in meta.values()]
+            with open(base, "r") as f:
+                meta = json.load(f)
+                return [(item["name"], item["start_time"]) for item in meta.values()]
     except Exception:
         return []
+    return []
 
 
 def create_settings(site_name: str):

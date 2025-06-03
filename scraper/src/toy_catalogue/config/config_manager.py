@@ -1,7 +1,7 @@
 import json
 from importlib import resources
-from toy_catalogue.config_spec import ConfigSpec
-from toy_catalogue.schema.config_schema import SiteConfig
+from toy_catalogue.config.schema.external.config import ConfigSpec
+from toy_catalogue.config.schema.internal.schema import SiteConfig
 
 
 class ConfigManager:
@@ -23,7 +23,7 @@ class ConfigManager:
         elif spec.type == "url":
             import requests
 
-            r = requests.get(spec.url)
+            r = requests.get(str(spec.url))
             r.raise_for_status()
             data = r.json()
 

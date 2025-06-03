@@ -1,8 +1,7 @@
 from scrapy.http import Response, TextResponse
-from toy_catalogue.extractors._base import BaseExtractor
-from scrapy import linkextractors
-from toy_catalogue.extractors._base import ExtractorParam
-from typing import Callable, Optional
+from ._base import BaseExtractor, ExtractorParam
+from scrapy.linkextractors import LinkExtractor as ScrapyLE
+from typing import Callable, Optional, Any
 
 
 class LEParams(ExtractorParam):
@@ -19,13 +18,15 @@ class LEParams(ExtractorParam):
     attrs: Optional[list[str]] = ["href", "data-href"]
     canonicalize: Optional[bool] = True
     unique: Optional[bool] = True
-    process_value: Optional[Callable] = None
+    process_value: Optional[Callable[[Any], Any]] = None
 
 
 class LinkExtractor(BaseExtractor):
+    le: ScrapyLE
+
     def __init__(self, params: LEParams):
         kwargs = {k: v for k, v in params.model_dump(exclude_none=True).items()}
-        self.le = linkextractors.LinkExtractor(**kwargs)
+        self.le = ScrapyLE(**kwargs)
 
     def extract(self, response: Response) -> list[str]:
         if not isinstance(response, TextResponse):

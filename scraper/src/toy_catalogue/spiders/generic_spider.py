@@ -1,37 +1,54 @@
 from scrapy.spiders import Spider
-from scrapy.http import Request, Response, TextResponse
+from scrapy.http import Request
 from urllib.parse import urlparse
-from datetime import datetime, timezone
-from typing import AsyncGenerator
-from scrapy import signals
+from typing import AsyncGenerator, Any
+from scrapy import signals, Item
+from scrapy.crawler import Crawler
+
 
 from toy_catalogue.utils.url import canonicalise_url
-from toy_catalogue.core.strategy_factory import build_strategy
-from toy_catalogue.schema.config_schema import StrategyConfig
-from toy_catalogue.core.handler_factory import build_handler_graph
+from toy_catalogue.engine.crawl_strategies import build_strategy
+from toy_catalogue.config.schema.internal.schema import StrategyConfig
+from toy_catalogue.engine.graph import build_traversal_graph
 from toy_catalogue.utils.session_manager import SessionContext
+from toy_catalogue.engine.crawl_strategies import BaseCrawlStrategy
+from toy_catalogue.items import ProductItem
 
 
 class GenericSpider(Spider):
     name = "generic"
 
-    def __init__(self, context: SessionContext, *args, **kwargs):
+    session_context: SessionContext
+    seen_urls: set[str] = set()
+    check_point_data: dict[str, str] = {}
+    strategy: BaseCrawlStrategy
+    parse_methods: list[str]
+    items_scraped: dict[type[Item], int]
+
+    def __init__(self, context: SessionContext, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.seen_urls: set[str] = set()
-        self.checkpoint_data: dict[str, str] = {}
+        # Scrapy paramters
         self.start_urls = list(context.meta.config.start_urls.values())
-        self.parse_methods = list(context.meta.config.start_urls.keys())
         self.allowed_domains = [urlparse(url).netloc for url in self.start_urls]
-        self.start_time = datetime.now(timezone.utc)
+        self.parse_methods = list(context.meta.config.start_urls.keys())
+
+        # Sessioning
+        self.session_context = context
+
+        # Traversal
         mode_config = StrategyConfig.model_validate(
             {"name": context.meta.mode, "params": {}}
         )
-        traversal_graph = build_handler_graph(context.meta.config.traversal)
+        traversal_graph = build_traversal_graph(context.meta.config.traversal)
         self.strategy = build_strategy(mode_config, traversal_graph)
+
+        # Stats
+        self.start_time = context.meta.timestamp
+        self.items_scraped = {ProductItem: 0}
         # silence_scrapy_logs()
 
     @classmethod
-    def from_crawler(cls, crawler, *args, **kwargs):
+    def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any):
         # Pull param from crawler settings if needed
         spider = super().from_crawler(crawler, *args, **kwargs)
         spider.logger.info("from_crawler called")
@@ -46,35 +63,11 @@ class GenericSpider(Spider):
                 meta={"callback": method},
             )
 
-    def errback_retry(self, failure):
-        request = failure.request
-        self.logger.warning(f"Request failed: {failure.value}")
-        yield self.retry_request(request)
-
-    def retry_request(self, response_or_request):
-        if isinstance(response_or_request, Request):
-            request = response_or_request
-        else:
-            request = response_or_request.request
-
-        return request.replace(dont_filter=True)
-
-    def is_bad_response(self, response):
-        # Check for Cloudflare captcha, login redirect, etc.
-        result = (
-            response.status != 200
-            or b"remote_addr" in response.body.lower()
-            and b"http_user-agent" in response.body.lower()
-        )
-        if result:
-            self.logger.info("Bad Response SSL")
-        return result
-
-    def _is_webpage(self, response: Response):
-        return isinstance(response, TextResponse)
+    def on_item_saved(self, item: Item) -> None:
+        ...
 
     def _should_follow(self, urls: list[str]) -> list[str]:
-        result = []
+        result: list[str] = []
         for link in urls:
             url = canonicalise_url(link)
             if url not in self.seen_urls:
@@ -82,15 +75,15 @@ class GenericSpider(Spider):
                 result.append(url)
         return result
 
-    def spider_closed(self, spider):
+    def spider_closed(self, spider: Spider) -> None:
         # This will be called when the spider is closed
         # self.state["checkpoint"] = self.checkpoint_data
         self.logger.info("Spider closed: %s", spider.name)
 
-        duration = datetime.now(timezone.utc) - self.start_time
-        hours, remainder = divmod(int(duration.total_seconds()), 3600)
-        minutes, seconds = divmod(remainder, 60)
-        self.logger.info(f"Run took {hours:02}h {minutes:02}mins {seconds:02}s")
+        # duration = datetime.now(timezone.utc) - self.start_time
+        # hours, remainder = divmod(int(duration.total_seconds()), 3600)
+        # minutes, seconds = divmod(remainder, 60)
+        # self.logger.info(f"Run took {hours:02}h {minutes:02}mins {seconds:02}s")
 
         # update_job_list(
         #     self, {"name": self.name, "start_time": self.start_time.isoformat()}

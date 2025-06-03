@@ -1,13 +1,13 @@
-from toy_catalogue.core.extractor_factory import build_extractor
-from toy_catalogue.schema.config_schema import GraphConfig
-from toy_catalogue.extractors._base import BaseExtractor
+from ..extractors import build_extractor
+from ..extractors._base import BaseExtractor
+from toy_catalogue.config.schema.internal.schema import GraphSchema
 from typing import TypeAlias
 
-HandlerGraph: TypeAlias = dict[str, dict[str, list[BaseExtractor]]]
+TraversalGraph: TypeAlias = dict[str, dict[str, list[BaseExtractor]]]
 
 
-def build_handler_graph(graph_config: GraphConfig) -> HandlerGraph:
-    graph: HandlerGraph = {}
+def build_traversal_graph(graph_config: GraphSchema) -> TraversalGraph:
+    graph: TraversalGraph = {}
     for name, details in graph_config.root.items():
         graph[name] = {}
         for detail in details:
