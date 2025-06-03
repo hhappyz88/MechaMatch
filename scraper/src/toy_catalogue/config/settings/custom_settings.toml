@@ -21,6 +21,10 @@ COOKIES_ENABLED = true
 "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware" = 543
 "toy_catalogue.middlewares.AllowImagesOffsiteMiddleware" = 542
 
+[pipelines]
+"toy_catalogue.pipelines.PostProcessingPipeline" = 300
+
+[custom]
 JHAO_PROXY_API_URL = "http://localhost:5010"
 JHAO_PROXY_TYPE = "https"
 JHAO_PROXY_MIN_SCORE = 5

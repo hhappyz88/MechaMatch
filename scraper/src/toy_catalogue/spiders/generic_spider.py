@@ -12,7 +12,6 @@ from toy_catalogue.config.schema.external.schema import StrategyConfig
 from toy_catalogue.engine.graph import build_traversal_graph
 from toy_catalogue.utils.session_manager import SessionContext
 from toy_catalogue.engine.crawl_strategies import BaseCrawlStrategy
-from toy_catalogue.postprocessing.items import ProductItem
 
 
 class GenericSpider(Spider):
@@ -44,7 +43,7 @@ class GenericSpider(Spider):
 
         # Stats
         self.start_time = context.meta.timestamp
-        self.items_scraped = {ProductItem: 0}
+        # self.items_scraped = {ProductItem: 0}
         # silence_scrapy_logs()
 
     @classmethod

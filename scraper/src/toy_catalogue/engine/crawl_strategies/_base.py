@@ -4,6 +4,8 @@ from typing import Callable
 from toy_catalogue.utils.url import canonicalise_url
 import logging
 from ..graph import TraversalGraph
+from datetime import datetime, timezone
+from toy_catalogue.items import StateItem
 
 
 class BaseCrawlStrategy(ABC):
@@ -14,13 +16,13 @@ class BaseCrawlStrategy(ABC):
         self.graph = traversal_graph
         self.seen = set()
 
-    def make_callback(self) -> Callable[[Response], list[Request]]:
-        def _callback(response: Response) -> list[Request]:
+    def make_callback(self) -> Callable[[Response], list[Request | StateItem]]:
+        def _callback(response: Response) -> list[Request | StateItem]:
             return self.process_node(response)
 
         return _callback
 
-    def process_node(self, response: Response) -> list[Request]:
+    def process_node(self, response: Response) -> list[Request | StateItem]:
         logger = logging.getLogger(__name__)
         current_state: str | None = response.meta.get("callback")
         if current_state is None:
@@ -32,13 +34,25 @@ class BaseCrawlStrategy(ABC):
         if not node_edges:
             return []
 
-        all_requests: list[Request] = []
+        all_outputs: list[Request | StateItem] = [
+            StateItem(
+                state=current_state,
+                url=response.url,
+                content=response.body,
+                metadata={
+                    "url": response.url,
+                    "title": response.css("title::text").get(default="").strip(),
+                    "time": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+        ]
+
         for next_node, extractors in node_edges.items():
             for extractor in extractors:
                 raw_urls = extractor.extract(response)
                 filtered_urls = self.filter_links(current_state, next_node, raw_urls)
                 for url in filtered_urls:
-                    all_requests.append(
+                    all_outputs.append(
                         Request(
                             url,
                             callback=self.make_callback(),
@@ -46,7 +60,7 @@ class BaseCrawlStrategy(ABC):
                         )
                     )
 
-        return all_requests
+        return all_outputs
 
     def filter_links(self, from_node: str, to_node: str, urls: list[str]) -> list[str]:
         return self._filter_duplicates(urls)
