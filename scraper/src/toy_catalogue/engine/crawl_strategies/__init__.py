@@ -1,11 +1,18 @@
 from ._base import BaseCrawlStrategy
 from .fresh import FreshCrawlStrategy
 from ..graph import TraversalGraph
-from toy_catalogue.config.schema.internal.schema import StrategyConfig
+from toy_catalogue.config.schema.external.schema import StrategyConfig
 
-__all__ = ["BaseCrawlStrategy"]
 
 STRATEGY_REGISTRY: dict[str, type[BaseCrawlStrategy]] = {"fresh": FreshCrawlStrategy}
+
+
+def register_strategy(name: str, strategy: type[BaseCrawlStrategy]) -> None:
+    STRATEGY_REGISTRY[name] = strategy
+
+
+def get_strategy(name: str) -> type[BaseCrawlStrategy]:
+    return STRATEGY_REGISTRY[name]
 
 
 def build_strategy(

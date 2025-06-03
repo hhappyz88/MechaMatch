@@ -1,3 +1,7 @@
+from typing import Optional, Any
+
+# from toy_catalogue.config.parameters import SCRAPY_SETTINGS_SPEC
+# from toy_catalogue.config.config_manager import ConfigManager
 # Scrapy settings for toy_catalogue project
 #
 # For simplicity, this file contains only settings considered important or
@@ -62,7 +66,7 @@ COOKIES_ENABLED = True
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-DOWNLOADER_MIDDLEWARES = {
+DOWNLOADER_MIDDLEWARES: dict[str, Optional[int]] = {
     "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": None,
     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": None,
     "scrapy_user_agents.middlewares.RandomUserAgentMiddleware": 400,
@@ -130,3 +134,21 @@ DOWNLOADER_CLIENT_TLS_METHOD = "TLS"
 DEPTH_PRIORITY = 1
 SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleFifoDiskQueue"
 SCHEDULER_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
+
+SCRAPY_SETTINGS_SPEC: dict[str, dict[str, Any]] = {
+    "ITEM_PIPELINES": {
+        "type": "dict",
+        "default": {},
+        "description": "A dictionary with pipeline class paths and their order.",
+    },
+    "CONCURRENT_REQUESTS": {
+        "type": "int",
+        "default": 16,
+        "description": "Maximum concurrent requests.",
+    },
+    "LOG_LEVEL": {
+        "type": "str",
+        "default": "DEBUG",
+        "description": "Logging level.",
+    },
+}

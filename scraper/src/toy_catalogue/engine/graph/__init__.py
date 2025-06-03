@@ -1,6 +1,6 @@
 from ..extractors import build_extractor
 from ..extractors._base import BaseExtractor
-from toy_catalogue.config.schema.internal.schema import GraphSchema
+from toy_catalogue.config.schema.external.schema import GraphSchema
 from typing import TypeAlias
 
 TraversalGraph: TypeAlias = dict[str, dict[str, list[BaseExtractor]]]

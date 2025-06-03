@@ -4,6 +4,8 @@ from typing import Any
 
 from toy_catalogue.engine.extractors import EXTRACTOR_REGISTRY, ExtractorParam
 
+# from .settings import FullConfig
+
 
 class ExtractorSchema(BaseModel):
     class_: str = Field(..., alias="class")
@@ -37,6 +39,7 @@ class SiteConfig(BaseModel):
     site: str
     start_urls: dict[str, str]
     traversal: GraphSchema
+    # scrapy: FullConfig
 
 
 class StrategyConfig(BaseModel):

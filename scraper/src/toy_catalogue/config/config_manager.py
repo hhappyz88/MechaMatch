@@ -1,7 +1,7 @@
 import json
 from importlib import resources
 from toy_catalogue.config.schema.external.config import ConfigSpec
-from toy_catalogue.config.schema.internal.schema import SiteConfig
+from toy_catalogue.config.schema.external.schema import SiteConfig
 
 
 class ConfigManager:

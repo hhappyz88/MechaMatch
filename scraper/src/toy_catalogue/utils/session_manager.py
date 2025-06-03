@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional, Any
 from pydantic import BaseModel
 
-from toy_catalogue.config.schema.internal.schema import SiteConfig
+from toy_catalogue.config.schema.external.schema import SiteConfig
 from toy_catalogue.config.parameters import SESSION_BASE_DIR
 from datetime import datetime, timezone
 
