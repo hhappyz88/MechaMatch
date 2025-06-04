@@ -36,7 +36,16 @@
     "image": []
   },
   "processors": {
-    "product": ["save"],
-    "image": ["save"]
+    "product": [
+      {
+        "class": "save"
+      }
+    ],
+    "image": [
+      {
+        "class": "save",
+        "method": "group_by_parent"
+      }
+    ]
   }
 }

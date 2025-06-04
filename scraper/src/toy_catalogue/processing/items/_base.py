@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Any
 from scrapy.http import Response
-from urllib.parse import urlparse
+from toy_catalogue.utils.url import generate_id
 
 
 class BaseItem(BaseModel):
@@ -19,17 +19,24 @@ class BaseItem(BaseModel):
 
     @classmethod
     def from_response(cls, response: Response, state: str) -> "BaseItem":
-        return cls(
-            id=urlparse(response.url).path.replace("/", "_").lstrip("_"),
-            state=state,
-            url=response.url,
-            content=response.body,
-            metadata={
+        base_data: dict[str, Any] = {
+            "id": generate_id(response.url),
+            "state": state,
+            "url": response.url,
+            "content": response.body,
+            "metadata": {
                 "url": response.url,
                 "status": response.status,
                 "headers": {
                     k.decode(): [v.decode() for v in vs]
                     for k, vs in response.headers.items()
                 },
+                "response_meta": response.meta,
             },
-        )
+        }
+        extra_data = cls._extra_from_response(response)
+        return cls(**base_data, **extra_data)
+
+    @classmethod
+    def _extra_from_response(cls, response: Response) -> dict[str, Any]:
+        return {}

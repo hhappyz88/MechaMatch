@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from pydantic import Field
 from scrapy.http import Response
 from ._base import BaseItem
-from urllib.parse import urlparse
+from typing import Any
 
 
 class ImageItem(BaseItem):
@@ -16,35 +16,17 @@ class ImageItem(BaseItem):
     )
 
     @classmethod
-    def from_response(cls, response: Response, state: str) -> "ImageItem":
-        # Placeholder logic — use PIL or other image parsing tool in practice
-        width = 0
-        height = 0
+    def _extra_from_response(cls, response: Response) -> dict[str, Any]:
         img_format = (
             (response.headers.get("Content-Type") or b"image/unknown")
             .decode(errors="replace")
-            .split("/")[1]
+            .split("/")[-1]
         )
-        alt_text = response.meta.get("alt", "")  # example: passed via meta
-        source_page_url = response.meta.get("source_page", "")
-
-        return cls(
-            id=urlparse(response.url).path.replace("/", "_").lstrip("_"),
-            state=state,
-            url=response.url,
-            content=response.body,
-            width=width,
-            height=height,
-            format=img_format,
-            alt_text=alt_text,
-            downloaded_at=datetime.now(timezone.utc).isoformat(),
-            source_page_url=source_page_url,
-            metadata={
-                "url": response.url,
-                "status": response.status,
-                "headers": {
-                    k.decode(): [v.decode() for v in vs]
-                    for k, vs in response.headers.items()
-                },
-            },
-        )
+        return {
+            "width": 0,
+            "height": 0,
+            "format": img_format,
+            "alt_text": response.meta.get("alt", ""),
+            "downloaded_at": datetime.now(timezone.utc).isoformat(),
+            "source_page_url": response.meta.get("source_page", ""),
+        }

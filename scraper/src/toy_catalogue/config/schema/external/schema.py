@@ -40,11 +40,10 @@ class SiteConfig(BaseModel):
     start_urls: dict[str, str]
     traversal: GraphSchema
     processors: ProcessorSchema
-    # scrapy: FullConfig
 
 
-class ProcessorSchema(RootModel[dict[str, list[str]]]):
-    def get_processors(self, node: str) -> list[str]:
+class ProcessorSchema(RootModel[dict[str, list[dict[str, str]]]]):
+    def get_processors(self, node: str) -> list[dict[str, str]]:
         return self.root.get(node, [])
 
 

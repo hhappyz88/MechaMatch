@@ -1,11 +1,15 @@
+from __future__ import annotations
 from abc import ABC
 from scrapy.http import Request, Response
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 from toy_catalogue.utils.url import canonicalise_url
 import logging
 from ..graph import TraversalGraph
 from toy_catalogue.processing.items import from_response
-from toy_catalogue.processing.items._base import BaseItem
+
+if TYPE_CHECKING:
+    from toy_catalogue.processing.items._base import BaseItem
+    from toy_catalogue.processing.pipelines.post_processors import BasePostProcessor
 
 
 class BaseCrawlStrategy(ABC):
@@ -16,9 +20,18 @@ class BaseCrawlStrategy(ABC):
         self.graph = traversal_graph
         self.seen = set()
 
+    def add_meta_processors(self, processors: list[BasePostProcessor]):
+        self.processors = processors
+
     def make_callback(self) -> Callable[[Response], list[Request | BaseItem]]:
         def _callback(response: Response) -> list[Request | BaseItem]:
-            return self.process_node(response)
+            outputs: list[Request | BaseItem] = []
+            for output in self.process_node(response):
+                if isinstance(output, Request):
+                    for p in self.processors:
+                        output = p.insert_meta(output, response)
+                outputs.append(output)
+            return outputs
 
         return _callback
 
@@ -28,11 +41,10 @@ class BaseCrawlStrategy(ABC):
         if current_state is None:
             logger.warning(f"No callback state in meta for {response.url}")
             return []
-        logger.info(f"{response.url} crawled originating from {current_state}")
+        logger.debug(f"{response.url} crawled originating from {current_state}")
 
         all_outputs: list[Request | BaseItem] = [from_response(response, current_state)]
         node_edges = self.graph.get(current_state, {})
-
         if node_edges:
             for next_node, extractors in node_edges.items():
                 for extractor in extractors:

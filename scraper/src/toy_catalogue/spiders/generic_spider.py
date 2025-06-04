@@ -1,17 +1,21 @@
+from __future__ import annotations
 from scrapy.spiders import Spider
 from scrapy.http import Request
 from urllib.parse import urlparse
-from typing import AsyncGenerator, Any
+from typing import AsyncGenerator, Any, TYPE_CHECKING
 from scrapy import signals, Item
 from scrapy.crawler import Crawler
 
 
 from toy_catalogue.utils.url import canonicalise_url
 from toy_catalogue.engine.crawl import build_strategy
-from toy_catalogue.config.schema.external.schema import StrategyConfig
 from toy_catalogue.engine.graph import build_traversal_graph
-from toy_catalogue.utils.session_manager import SessionContext
-from toy_catalogue.engine.crawl import BaseCrawlStrategy
+from toy_catalogue.config.schema.external.schema import StrategyConfig
+
+if TYPE_CHECKING:
+    from toy_catalogue.utils.session_manager import SessionContext
+    from toy_catalogue.engine.crawl import BaseCrawlStrategy
+    from toy_catalogue.processing.pipelines.post_processors import BasePostProcessor
 
 
 class GenericSpider(Spider):
@@ -53,6 +57,9 @@ class GenericSpider(Spider):
         spider.logger.info("from_crawler called")
         crawler.signals.connect(spider.spider_closed, signal=signals.spider_closed)
         return spider
+
+    def add_meta_processors(self, processers: list[BasePostProcessor]) -> None:
+        self.strategy.add_meta_processors(processers)
 
     async def start(self) -> AsyncGenerator[Request, None]:
         for url, method in zip(self.start_urls, self.parse_methods):
