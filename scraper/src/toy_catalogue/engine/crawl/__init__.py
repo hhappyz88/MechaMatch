@@ -1,5 +1,5 @@
-from ._base import BaseCrawlStrategy
-from .fresh import FreshCrawlStrategy
+from .base import BaseCrawlStrategy
+from .strategies.fresh import FreshCrawlStrategy
 from ..graph import TraversalGraph
 from toy_catalogue.config.schema.external.schema import StrategyConfig
 

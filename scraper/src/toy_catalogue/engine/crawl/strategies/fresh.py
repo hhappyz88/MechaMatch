@@ -1,4 +1,4 @@
-from ._base import BaseCrawlStrategy
+from ..base import BaseCrawlStrategy
 
 
 class FreshCrawlStrategy(BaseCrawlStrategy):

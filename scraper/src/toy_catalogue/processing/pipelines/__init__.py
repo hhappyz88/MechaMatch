@@ -6,18 +6,19 @@
 
 # useful for handling different item types with a single interface
 from __future__ import annotations
-from .post_processors._base import BasePostProcessor
+from .post_processors import ItemProcessorPairing
 from scrapy.crawler import Crawler
 from typing import Any, TYPE_CHECKING, cast
 from toy_catalogue.spiders.generic_spider import GenericSpider
 
 if TYPE_CHECKING:
     from toy_catalogue.config.schema.external.schema import ProcessorSchema
+    from toy_catalogue.processing.items import BaseItem
 from .post_processors import PROCESSOR_REGISTRY
 
 
 class PostProcessingPipeline:
-    def __init__(self, registry: dict[str, list[BasePostProcessor]]):
+    def __init__(self, registry: dict[str, list[ItemProcessorPairing]]):
         self.registry = registry
 
     @classmethod
@@ -27,17 +28,16 @@ class PostProcessingPipeline:
         return cls(registry)
 
     @staticmethod
-    def build_mapping(config: ProcessorSchema) -> dict[str, list[BasePostProcessor]]:
-        mapping: dict[str, list[BasePostProcessor]] = {}
+    def build_mapping(config: ProcessorSchema) -> dict[str, list[ItemProcessorPairing]]:
+        mapping: dict[str, list[ItemProcessorPairing]] = {}
         for state, nodes in config.root.items():
-            mapping[state] = [PROCESSOR_REGISTRY[name]() for name in nodes]
+            mapping[state] = [PROCESSOR_REGISTRY[name] for name in nodes]
         return mapping
 
-    def process_item(self, item: Any, spider: GenericSpider) -> Any:
-        state = getattr(item, "state") or item.get("state")
-        if not state or state not in self.registry:
-            return item
-
-        for processor in self.registry[state]:
+    def process_item(self, item: BaseItem, spider: GenericSpider) -> Any:
+        for type_registry in self.registry[item.state]:
+            processor = type_registry.get(type(item))
+            if processor is None:
+                return item
             item = processor.process(item, spider.session_context)
         return item

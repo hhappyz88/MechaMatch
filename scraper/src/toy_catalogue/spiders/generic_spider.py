@@ -7,11 +7,11 @@ from scrapy.crawler import Crawler
 
 
 from toy_catalogue.utils.url import canonicalise_url
-from toy_catalogue.engine.crawl_strategies import build_strategy
+from toy_catalogue.engine.crawl import build_strategy
 from toy_catalogue.config.schema.external.schema import StrategyConfig
 from toy_catalogue.engine.graph import build_traversal_graph
 from toy_catalogue.utils.session_manager import SessionContext
-from toy_catalogue.engine.crawl_strategies import BaseCrawlStrategy
+from toy_catalogue.engine.crawl import BaseCrawlStrategy
 
 
 class GenericSpider(Spider):

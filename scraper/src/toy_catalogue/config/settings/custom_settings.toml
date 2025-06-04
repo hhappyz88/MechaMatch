@@ -22,7 +22,7 @@ COOKIES_ENABLED = true
 "toy_catalogue.middlewares.AllowImagesOffsiteMiddleware" = 542
 
 [pipelines]
-"toy_catalogue.pipelines.PostProcessingPipeline" = 300
+"toy_catalogue.processing.pipelines.PostProcessingPipeline" = 300
 
 [custom]
 JHAO_PROXY_API_URL = "http://localhost:5010"
