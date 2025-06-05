@@ -24,3 +24,4 @@ dependencies:
       - scrapy-playwright
       - aiohttp
       - scrapy-user-agents
+      - types-requests
