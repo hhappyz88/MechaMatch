@@ -1,0 +1,15 @@
+{
+  "site": "gundamplacestore",
+  "start_urls": ["https://gundamplacestore.com/collections/all"],
+  "pagination_strategy": {
+    "type": "next_button",
+    "selector": "a.pagination__item--prev"
+  },
+  "product_strategy": {
+    "type": "link_extractor",
+    "allow": ["/collections/all/products/[\\w\\-]+$"],
+    "deny": []
+  },
+  "image_selectors": ["lazy-image.product__media img"],
+  "image_attrs": ["src"]
+}

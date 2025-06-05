@@ -1,0 +1,38 @@
+{
+  "traversal": {
+    "collection": [
+      {
+        "extractors": [
+          {
+            "class": "link_extractor",
+            "params": {
+              "restrict_css": ["a.pagination__item--prev", "a.pagination__item--next"]
+            }
+          }
+        ],
+        "callbacks": ["collection"]
+      },
+      {
+        "extractors": [
+          {
+            "class": "link_extractor",
+            "params": {"allow": ["/products/[\\w\\-]+$"]}
+          }
+        ],
+        "callbacks": ["product"]
+      }
+    ],
+    "product": [
+      {
+        "extractors": [
+          {
+            "class": "css_getall",
+            "params": {"selectors": ["div.product__media img"], "attrs": ["src"]}
+          }
+        ],
+        "callbacks": ["image"]
+      }
+    ],
+    "image": []
+  }
+}

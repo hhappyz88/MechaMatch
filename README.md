@@ -1,7 +1,32 @@
 # Setup
+## Docker Pulls
+```docker pull jhao104/proxy_pool```
 ## For Conda
+```conda env create -f environment.yml```
 ```conda activate mecha_match```
 
+## Docker
+To create docker containers
+```docker run -d --name redis -p 6379:6379 -v "$Env:USERPROFILE/redis_data"```
+```docker run -d --name proxy_pool -p 5010:5010   --env DB_CONN=redis://host.docker.internal:6379/0   jhao104/proxy_pool:latest```
+
+To pause docker containers
+```docker stop proxy_pool```
+```docker stop redis```
+
+To start docker containers
+```docker start proxy_pool```
+```docker start redis```
+
+List docker containers
+```docker ps```
+```docker ps -a```
+
+Rmove stopped containers
+```docker container prune```
+
+Check logs 
+```docker logs -f <container_name>```
 # Scraping
 1. Setup Write config file in ```/scraper/config/scrapy_rules``` based on example_rule
 2. Run Scraper

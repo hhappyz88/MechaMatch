@@ -1,0 +1,44 @@
+RETRY_ENABLED = true
+RETRY_TIMES = 5
+RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 403]
+
+CONCURRENT_REQUESTS = 1
+DOWNLOAD_DELAY = 0
+RANDOMIZE_DOWNLOAD_DELAY = true
+DOWNLOAD_TIMEOUT = 60
+
+AUTOTHROTTLE_ENABLED = true
+AUTOTHROTTLE_START_DELAY = 1
+AUTOTHROTTLE_MAX_DELAY = 10
+AUTOTHROTTLE_TARGET_CONCURRENCY = 2
+AUTOTHROTTLE_DEBUG = false
+
+COOKIES_ENABLED = true
+
+[downloader_middlewares]
+"scrapy_user_agents.middlewares.RandomUserAgentMiddleware" = 400
+"scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware" = 110
+"scrapy.downloadermiddlewares.offsite.OffsiteMiddleware" = 543
+"toy_catalogue.middlewares.AllowImagesOffsiteMiddleware" = 542
+
+[pipelines]
+"toy_catalogue.processing.pipelines.PostProcessingPipeline" = 300
+
+[custom]
+JHAO_PROXY_API_URL = "http://localhost:5010"
+JHAO_PROXY_TYPE = "https"
+JHAO_PROXY_MIN_SCORE = 5
+
+IMAGES_STORE = "data/miscellaneous"
+
+FEED_EXPORT_ENCODING = "utf-8"
+
+DUPEFILTER_CLASS = "scrapy.dupefilters.RFPDupeFilter"
+
+TELNETCONSOLE_ENABLED = true
+LOG_STDOUT = true
+LOG_LEVEL = "INFO"
+
+DEPTH_PRIORITY = 1
+SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleFifoDiskQueue"
+SCHEDULER_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"

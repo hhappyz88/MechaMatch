@@ -1,0 +1,15 @@
+{
+  "site": "bitsandbobstoyshop",
+  "start_urls": ["https://bitsandbobstoyshop.com/collections/all"],
+  "pagination_strategy": {
+    "type": "next_button",
+    "selector": "a.pagination__item--prev"
+  },
+  "product_strategy": {
+    "type": "link_extractor",
+    "allow": ["/products/[\\w\\-]+$"],
+    "deny": []
+  },
+  "image_selectors": ["div.product__media img"],
+  "image_attrs": ["src"]
+}

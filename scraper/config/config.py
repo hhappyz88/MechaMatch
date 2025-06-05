@@ -1,2 +1,0 @@
-DATA_ROOT = "data"
-PROXY_TIMEOUT = 5

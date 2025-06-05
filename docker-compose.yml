@@ -1,6 +1,45 @@
-version: '3.8'
+version: '3.9'
 
 services:
+  # ---------- Redis store ----------
+  redis:
+    image: redis:7-alpine
+    container_name: proxy_redis
+    # restart: unless-stopped
+    ports:
+      - "6379:6379"        # bind only if you need local CLI access
+    volumes:
+      - redis_data:/data
+
+  # ---------- Proxy-Pool core ----------
+  proxy_core:
+    image: ghcr.io/jhao104/proxy_pool:latest
+    container_name: proxy_core
+    depends_on:
+      - redis
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      FETCH_INTERVAL: 10     # minutes between free-proxy crawls
+      CHECK_INTERVAL: 5      # minutes between health checks
+      FAIL_COUNT: 3          # bad attempts before deleting proxy
+    # restart: unless-stopped
+
+  # ---------- API server ----------
+  proxy_api:
+    image: ghcr.io/jhao104/proxy_pool:latest
+    container_name: proxy_api
+    command: ["python", "proxy_pool/api.py"]
+    depends_on:
+      - redis
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      API_HOST: "0.0.0.0"
+      API_PORT: 5010
+    # restart: unless-stopped
+    ports:
+      - "127.0.0.1:5010:5010"   # localhost-only for safety
   scraper:
     build: .
     volumes:
