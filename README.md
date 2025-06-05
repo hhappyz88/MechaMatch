@@ -1,9 +1,17 @@
 # Setup
-## Docker Pulls
-```docker pull jhao104/proxy_pool```
-## For Conda
+## Frontend
+```cd frontend```
+```npm run dev -- --open```
+## Backend
+### For Conda
 ```conda env create -f environment.yml```
 ```conda activate mecha_match```
+### Scraping
+1. Setup Write config file in ```/scraper/src/toy_catalogue/config/rules/sites```
+2. Run Scraper
+```run-spiders {filename}```
+## Docker Pulls
+```docker pull jhao104/proxy_pool```
 
 ## Docker
 To create docker containers
@@ -27,10 +35,6 @@ Rmove stopped containers
 
 Check logs 
 ```docker logs -f <container_name>```
-# Scraping
-1. Setup Write config file in ```/scraper/config/scrapy_rules``` based on example_rule
-2. Run Scraper
-```python scraper/run_spiders.py```
 
 # Testing
 ```python -m pytest```
