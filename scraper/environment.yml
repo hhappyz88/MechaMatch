@@ -25,4 +25,4 @@ dependencies:
       - aiohttp
       - scrapy-user-agents
       - types-requests
-      - toy_catalogue
+      - -e .
