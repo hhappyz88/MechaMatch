@@ -17,6 +17,9 @@ class BaseItem(BaseModel):
             f"url={self.url!r}, content={type(self.content).__name__})"
         )
 
+    def __str__(self) -> str:
+        return self.__repr__()
+
     @classmethod
     def from_response(cls, response: Response, state: str) -> "BaseItem":
         base_data: dict[str, Any] = {

@@ -1,5 +1,6 @@
 from urllib.parse import urlparse, urlunparse
 import hashlib
+from pathlib import Path
 
 
 def canonicalise_url(url: str) -> str:
@@ -8,7 +9,7 @@ def canonicalise_url(url: str) -> str:
 
 
 def generate_id(url: str) -> str:
-    return urlparse(url).path.replace("/", "_").lstrip("_")
+    return urlparse(Path(urlparse(url).path).name).path.replace("/", "_").lstrip("_")
 
 
 def make_safe_folder_name(

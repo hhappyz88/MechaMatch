@@ -1,37 +1,17 @@
 from ._base import SavePostProcessor
-from toy_catalogue.utils.session_manager import SessionContext
 from toy_catalogue.processing.items import BaseItem
-from urllib.parse import urlparse
-from pathlib import Path
-import json
-from toy_catalogue.utils.paths import make_safe_folder_name
+
+import mimetypes
+import hashlib
 
 
 class ImageSaveProcessor(SavePostProcessor):
-    def save(self, item: BaseItem, context: SessionContext) -> None:
-        image_bytes = item.content
-        image_url = item.url
-        metadata = item.metadata
-        # Use image URL path to generate a safe filename
-        parsed = urlparse(image_url)
-        image_filename = Path(parsed.path).name
-        if not image_filename:
-            image_filename = "image"
+    def get_content_filename(self, item: BaseItem) -> str:
+        # Try to get file extension from Content-Type
+        mime_type = item.metadata.get("headers", {}).get("Content-Type", [""])[0]
+        ext = mimetypes.guess_extension(mime_type) or ".bin"
 
-        # Determine a deterministic folder to store the image
-        folder_path = self.path_saver.get_save_destination(item, context, self.meta_key)
-        folder_path.mkdir(parents=True, exist_ok=True)
+        # Use a hash of the URL to ensure uniqueness
+        url_hash = hashlib.md5(item.url.encode("utf-8")).hexdigest()[:8]
 
-        # Save image file
-        try:
-            image_path = folder_path / "images" / make_safe_folder_name(image_filename)
-            image_path.mkdir(parents=True, exist_ok=True)
-            (image_path / image_filename).write_bytes(image_bytes)
-
-            # Save metadata (optional, e.g. alt text, source page)
-            meta_path = image_path / "metadata.json"
-            meta_path.write_text(
-                json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8"
-            )
-        except Exception as e:
-            print(e)
+        return f"image_{url_hash}{ext}"

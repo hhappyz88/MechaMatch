@@ -39,3 +39,7 @@ class BasePostProcessor(ABC):
     @abstractmethod
     def process(self, item: BaseItem, context: SessionContext) -> BaseItem:
         pass
+
+    @abstractmethod
+    def already_been_processed(self, item: BaseItem, context: SessionContext) -> bool:
+        pass
