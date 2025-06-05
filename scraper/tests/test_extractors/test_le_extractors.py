@@ -1,6 +1,6 @@
 import pytest
 from scrapy.http import TextResponse
-from toy_catalogue.extractors.link_extractor import LinkExtractor, LEParams
+from toy_catalogue.engine.extractors.link_extractor import LinkExtractor, LEParams
 
 
 @pytest.fixture
