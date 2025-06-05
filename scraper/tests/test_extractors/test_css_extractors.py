@@ -40,34 +40,41 @@ def multi_selector_multi_attr_config() -> CssParams:
     )
 
 
-def test_css_get_single_selector(sample_response, sample_config):
-    extractor = CssGetExtractor(sample_config)
-    result = extractor.extract(sample_response)
+def test_css_get_single_selector(
+    sample_response: TextResponse,
+    sample_config: CssParams,
+) -> None:
+    extractor: CssGetExtractor = CssGetExtractor(sample_config)
+    result: list[str] = extractor.extract(sample_response)
     assert result == [sample_response.urljoin(img) for img in ["image1.jpg"]]
 
 
-def test_css_getall_single_selector(sample_response, sample_config):
-    extractor = CssGetAllExtractor(sample_config)
-    result = extractor.extract(sample_response)
+def test_css_getall_single_selector(
+    sample_response: TextResponse,
+    sample_config: CssParams,
+) -> None:
+    extractor: CssGetAllExtractor = CssGetAllExtractor(sample_config)
+    result: list[str] = extractor.extract(sample_response)
     assert result == [
         sample_response.urljoin(img) for img in ["image1.jpg", "image2.jpg"]
     ]
 
 
-def test_css_get_missing_attr(sample_config):
-    html = b'<html><body><img/><img src="image.jpg"/></body></html>'
-    response = TextResponse(url="http://example.com", body=html)
-    extractor = CssGetExtractor(sample_config)
-    result = extractor.extract(response)
+def test_css_get_missing_attr(sample_config: CssParams) -> None:
+    html: bytes = b'<html><body><img/><img src="image.jpg"/></body></html>'
+    response: TextResponse = TextResponse(url="http://example.com", body=html)
+    extractor: CssGetExtractor = CssGetExtractor(sample_config)
+    result: list[str] = extractor.extract(response)
     assert result == [response.urljoin(img) for img in ["image.jpg"]]
 
 
 def test_cross_product_extraction(
-    response_with_mixed_elements, multi_selector_multi_attr_config
-):
-    extractor = CssGetAllExtractor(multi_selector_multi_attr_config)
-    result = extractor.extract(response_with_mixed_elements)
-    expected = [
+    response_with_mixed_elements: TextResponse,
+    multi_selector_multi_attr_config: CssParams,
+) -> None:
+    extractor: CssGetAllExtractor = CssGetAllExtractor(multi_selector_multi_attr_config)
+    result: list[str] = extractor.extract(response_with_mixed_elements)
+    expected: list[str] = [
         "http://example.com/img1.jpg",  # img[src]
         "http://example.com/fallback1.jpg",  # img[data-src]
         "http://example.com/fallback2.jpg",  # div[data-src]

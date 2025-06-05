@@ -6,6 +6,7 @@ from toy_catalogue.config.schema.external.config import (
     FileConfig,
     PackageConfig,
     UrlConfig,
+    ConfigSpec,
 )
 from toy_catalogue.session.session_manager import SessionManager
 from toy_catalogue.spiders.generic_spider import GenericSpider
@@ -20,10 +21,11 @@ def main(
     config_file: Path = typer.Option(None, "--file", help="Path to local JSON config"),
     config_url: str = typer.Option(None, "--url", help="URL to load config from"),
 ):
+    spec: ConfigSpec
     if config_file:
         spec = FileConfig(type="file", path=str(config_file))
     elif config_url:
-        spec = UrlConfig(type="url", url=config_url)
+        spec = UrlConfig.model_validate({"type": "url", "url": config_url})
     else:
         spec = PackageConfig(type="package", resource=f"sites/{site}.json")
     core = load_config_from_package("core_settings.toml")
