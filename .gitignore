@@ -35,9 +35,3 @@ old/
 .DS_Store
 Thumbs.db
 
-# scraper
-scraper/config/proxies.json
-scraper/config/sites/
-scraper/crawls/
-*.code-workspace
-*.egg-info/
