@@ -1,7 +1,7 @@
 from typing import Any, cast
 from scrapy.http import Response
 from .base import SaveModifier
-from toy_catalogue.utils.session_manager import SessionContext
+from toy_catalogue.session.session_manager import SessionContext
 from pathlib import Path
 from toy_catalogue.processing.items import BaseItem
 from pydantic import BaseModel

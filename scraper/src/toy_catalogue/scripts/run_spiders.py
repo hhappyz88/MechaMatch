@@ -7,7 +7,7 @@ from toy_catalogue.config.schema.external.config import (
     PackageConfig,
     UrlConfig,
 )
-from toy_catalogue.utils.session_manager import SessionManager
+from toy_catalogue.session.session_manager import SessionManager
 from toy_catalogue.spiders.generic_spider import GenericSpider
 from toy_catalogue.config.settings import build_settings, load_config_from_package
 
@@ -36,7 +36,6 @@ def main(
     session = SessionManager.create_session(config, mode="fresh")
     print("Session created", session)
 
-    # process = CrawlerProcess(settings)  # Load settings.py
     process = CrawlerProcess(settings)
     process.crawl(GenericSpider, context=session)
 

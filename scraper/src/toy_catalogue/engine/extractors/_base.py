@@ -5,14 +5,14 @@ from pydantic import BaseModel
 
 
 class ExtractorParam(BaseModel):
-    pass
+    ...
 
 
 class BaseExtractor(ABC):
     @abstractmethod
     def __init__(self, params: ExtractorParam):
-        pass
+        ...
 
     @abstractmethod
     def extract(self, response: Response) -> list[Any]:
-        pass
+        ...

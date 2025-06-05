@@ -1,5 +1,4 @@
 from __future__ import annotations
-from abc import ABC
 from scrapy.http import Request, Response
 from typing import Callable, TYPE_CHECKING
 from toy_catalogue.utils.url import canonicalise_url
@@ -10,15 +9,20 @@ from toy_catalogue.processing.items import from_response
 if TYPE_CHECKING:
     from toy_catalogue.processing.items._base import BaseItem
     from toy_catalogue.processing.pipelines.post_processors import BasePostProcessor
+    from toy_catalogue.session.session_manager import SessionContext
 
 
-class BaseCrawlStrategy(ABC):
+class BaseCrawlStrategy:
     graph: TraversalGraph
     seen: set[str]
+    session: SessionContext
 
-    def __init__(self, traversal_graph: TraversalGraph) -> None:
+    def __init__(
+        self, traversal_graph: TraversalGraph, session: SessionContext
+    ) -> None:
         self.graph = traversal_graph
         self.seen = set()
+        self.session = session
 
     def add_meta_processors(self, processors: list[BasePostProcessor]):
         self.processors = processors
@@ -43,7 +47,21 @@ class BaseCrawlStrategy(ABC):
             return []
         logger.debug(f"{response.url} crawled originating from {current_state}")
 
-        all_outputs: list[Request | BaseItem] = [from_response(response, current_state)]
+        try:
+            item = from_response(response, current_state)
+            self.session.record_success(
+                source="response_to_item_parse",
+                msg=f"Item created successfully {type(item)}",
+            )
+        except Exception as e:
+            self.session.record_error(
+                source="response_to_item_parse",
+                msg=f"Item creation failed for: {response.url}",
+                error=e,
+            )
+            item = None
+
+        all_outputs: list[Request | BaseItem] = [item] if item else []
         node_edges = self.graph.get(current_state, {})
         if node_edges:
             for next_node, extractors in node_edges.items():
@@ -60,7 +78,15 @@ class BaseCrawlStrategy(ABC):
                                 meta={"callback": next_node},
                             )
                         )
-
+        self.session.record_event(
+            event_type="links_extracted",
+            source="strategy",
+            details={
+                "count": len(all_outputs)
+                - int(not isinstance(all_outputs[0], Request)),
+                "url": response.url,
+            },
+        )
         return all_outputs
 
     def filter_links(self, from_node: str, to_node: str, urls: list[str]) -> list[str]:

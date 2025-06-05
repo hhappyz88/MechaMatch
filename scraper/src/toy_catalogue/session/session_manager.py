@@ -1,11 +1,12 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import Optional, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
 
 from toy_catalogue.config.schema.external.schema import SiteConfig
 from toy_catalogue.config.parameters import SESSION_BASE_DIR
 from datetime import datetime, timezone
+import json
 
 
 class SessionMeta(BaseModel):
@@ -23,6 +24,43 @@ class SessionContext(BaseModel):
     session_id: str
     session_dir: Path
     meta: SessionMeta
+
+    _events: list[dict[str, Any]] = PrivateAttr()
+
+    def model_post_init(self, __context: Any) -> None:
+        self._events = []
+
+    def record_success(self, source: str, msg: str, extra: dict[str, Any] = {}) -> None:
+        self.record_event("success", source, {"message": msg, **extra})
+
+    def record_error(self, source: str, msg: str, error: Exception | str) -> None:
+        self.record_event(
+            "error",
+            source,
+            {
+                "message": msg,
+                "error": repr(error) if isinstance(error, Exception) else error,
+            },
+        )
+
+    def record_event(
+        self, event_type: str, source: str, details: dict[str, Any]
+    ) -> None:
+        self._events.append(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "type": event_type,
+                "source": source,
+                "details": details,
+            }
+        )
+
+    def flush_events(self) -> None:
+        event_path = self.session_dir / "events.jsonl"
+        with open(event_path, "a", encoding="utf-8") as f:
+            for event in self._events:
+                f.write(json.dumps(event) + "\n")
+        self._events.clear()
 
     @property
     def product_path(self) -> Path:

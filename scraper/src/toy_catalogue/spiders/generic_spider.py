@@ -5,15 +5,16 @@ from urllib.parse import urlparse
 from typing import AsyncGenerator, Any, TYPE_CHECKING
 from scrapy import signals, Item
 from scrapy.crawler import Crawler
-
+import logging
 
 from toy_catalogue.utils.url import canonicalise_url
 from toy_catalogue.engine.crawl import build_strategy
 from toy_catalogue.engine.graph import build_traversal_graph
 from toy_catalogue.config.schema.external.schema import StrategyConfig
+from toy_catalogue.session.log_intercepter import SessionLoggingHandler
 
 if TYPE_CHECKING:
-    from toy_catalogue.utils.session_manager import SessionContext
+    from toy_catalogue.session.session_manager import SessionContext
     from toy_catalogue.engine.crawl import BaseCrawlStrategy
     from toy_catalogue.processing.pipelines.post_processors import BasePostProcessor
 
@@ -37,13 +38,22 @@ class GenericSpider(Spider):
 
         # Sessioning
         self.session_context = context
+        handler = SessionLoggingHandler(self.session_context)
+        # intercept scrapy logs
+        formatter = logging.Formatter(
+            "[%(asctime)sZ] %(levelname)s: %(message)s", datefmt="%Y-%m-%dT%H:%M:%S"
+        )
+        handler.setFormatter(formatter)
+
+        logger = logging.getLogger("scrapy")
+        logger.addHandler(handler)
 
         # Traversal
         mode_config = StrategyConfig.model_validate(
             {"name": context.meta.mode, "params": {}}
         )
         traversal_graph = build_traversal_graph(context.meta.config.traversal)
-        self.strategy = build_strategy(mode_config, traversal_graph)
+        self.strategy = build_strategy(mode_config, traversal_graph, context)
 
         # Stats
         self.start_time = context.meta.timestamp
@@ -84,8 +94,8 @@ class GenericSpider(Spider):
     def spider_closed(self, spider: Spider) -> None:
         # This will be called when the spider is closed
         # self.state["checkpoint"] = self.checkpoint_data
+        self.session_context.flush_events()
         self.logger.info("Spider closed: %s", spider.name)
-
         # duration = datetime.now(timezone.utc) - self.start_time
         # hours, remainder = divmod(int(duration.total_seconds()), 3600)
         # minutes, seconds = divmod(remainder, 60)

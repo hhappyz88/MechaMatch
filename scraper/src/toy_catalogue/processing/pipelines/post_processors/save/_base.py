@@ -3,7 +3,7 @@ from typing import Any
 
 from scrapy.http import Response
 from .._base import BasePostProcessor
-from toy_catalogue.utils.session_manager import SessionContext
+from toy_catalogue.session.session_manager import SessionContext
 from toy_catalogue.processing.items import BaseItem
 from .path.registry import SAVE_TYPES
 from .path.base import SaveModifier
@@ -19,7 +19,7 @@ class SavePostProcessor(BasePostProcessor):
     def __init__(self, method: str):
         self.path_saver = SAVE_TYPES.get(method) or SAVE_TYPES["default"]
 
-    def process(self, item: BaseItem, context: SessionContext) -> BaseItem:
+    def _process(self, item: BaseItem, context: SessionContext) -> BaseItem:
         self.save(item, context)
         return item
 

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional
-from toy_catalogue.utils.session_manager import SessionContext
+from toy_catalogue.session.session_manager import SessionContext
 from toy_catalogue.processing.items import BaseItem
 from scrapy.http import Request, Response
 
@@ -36,10 +36,26 @@ class BasePostProcessor(ABC):
     def extract_meta_from_response(self, response: Response) -> Optional[Any]:
         return None
 
-    @abstractmethod
     def process(self, item: BaseItem, context: SessionContext) -> BaseItem:
-        pass
+        try:
+            processed_item = self._process(item, context)
+            context.record_success(
+                source=f"processing.pipelines.post_processors.base.{self.meta_key}",
+                msg=f"Successfully processed {item.state} for {item.url}",
+            )
+            return processed_item
+        except Exception as e:
+            context.record_error(
+                source=f"processing.pipelines.post_processors.base.{self.meta_key}",
+                msg=f"Failed to process {item.state} for {item.url}",
+                error=e,
+            )
+            return item
+
+    @abstractmethod
+    def _process(self, item: BaseItem, context: SessionContext) -> BaseItem:
+        ...
 
     @abstractmethod
     def already_been_processed(self, item: BaseItem, context: SessionContext) -> bool:
-        pass
+        ...
