@@ -1,9 +1,12 @@
-name: CI Pipeline
+name: Scraper CI
 
 on:
   push:
+    paths:
+      - 'scraper/**'
   pull_request:
-
+    paths:
+      - 'scraper/**'
 jobs:
   build-and-test:
     name: Build, Lint, Test

@@ -30,7 +30,7 @@
   ];
 </script>
 
-<main class="p-6 space-y-6">
+<main class="space-y-6 p-6">
   <h1 class="text-2xl font-bold">Sessions</h1>
   <SessionList {sessions} />
 </main>

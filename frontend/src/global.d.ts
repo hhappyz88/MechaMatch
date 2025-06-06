@@ -5,6 +5,6 @@ declare module '*.svelte' {
   export default class SvelteComponent extends SvelteComponentTyped<
     Record<string, unknown>, // props
     Record<string, unknown>, // events
-    Record<string, unknown>  // slots
+    Record<string, unknown> // slots
   > {}
 }

@@ -1,3 +1,8 @@
+# Layout
+## Frontend
+Dashboard
+## Scraper
+Scraper
 # Setup
 ## Frontend
 ```cd frontend```

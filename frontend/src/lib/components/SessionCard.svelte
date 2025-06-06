@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { statusColours , type Session } from '$lib';
+  import { statusColours, type Session } from '$lib';
 
   export let session: Session;
 </script>
 
-<div class="rounded-xl border p-4 shadow-sm space-y-2">
-  <div class="flex justify-between items-center">
+<div class="space-y-2 rounded-xl border p-4 shadow-sm">
+  <div class="flex items-center justify-between">
     <h3 class="text-lg font-semibold">{session.name}</h3>
-    <span class={`font-medium px-2 py-1 text-sm rounded ${statusColours[session.status]}`}>
+    <span class={`rounded px-2 py-1 text-sm font-medium ${statusColours[session.status]}`}>
       {session.status}
     </span>
   </div>
