@@ -1,0 +1,33 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+  pull_request:
+    paths:
+      - 'backend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+            auto-update-conda: true
+            activate-environment: mecha_match
+            environment-file: scraper/environment.yml
+            auto-activate-base: false
+            python-version: 3.11
+
+      - run: pytest
+      - run: flake8 .
+      - name: Run Tests
+        run: |
+            coverage run -m pytest
+            coverage report

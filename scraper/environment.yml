@@ -26,3 +26,4 @@ dependencies:
       - scrapy-user-agents
       - types-requests
       - -e .
+      - pytest-cov

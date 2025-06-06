@@ -11,6 +11,9 @@ jobs:
   build-and-test:
     name: Build, Lint, Test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scraper
 
     steps:
       - name: Checkout Code
@@ -21,7 +24,7 @@ jobs:
         with:
           auto-update-conda: true
           activate-environment: mecha_match
-          environment-file: scraper/environment.yml
+          environment-file: environment.yml
           auto-activate-base: false
           python-version: 3.11
 
@@ -35,4 +38,4 @@ jobs:
         shell: bash -l {0}
         run: |
           conda activate mecha_match
-          pytest scraper/tests/ --maxfail=3 --disable-warnings --durations=10
+          pytest --maxfail=3 --disable-warnings --durations=10

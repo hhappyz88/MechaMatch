@@ -34,3 +34,8 @@ old/
 .DS_Store
 Thumbs.db
 
+# pytest
+.coverage
+htmlcov/
+covereage.xml
+
