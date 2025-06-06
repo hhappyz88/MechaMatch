@@ -1,12 +1,13 @@
 from __future__ import annotations
+import json
 from pathlib import Path
 from typing import Optional, Any
+from datetime import datetime, timezone
 from pydantic import BaseModel, PrivateAttr
 
 from toy_catalogue.config.schema.external.schema import SiteConfig
 from toy_catalogue.config.parameters import SESSION_BASE_DIR
-from datetime import datetime, timezone
-import json
+from shared_types.session import LogEntry
 
 
 class SessionMeta(BaseModel):
@@ -25,7 +26,7 @@ class SessionContext(BaseModel):
     session_dir: Path
     meta: SessionMeta
 
-    _events: list[dict[str, Any]] = PrivateAttr()
+    _events: list[LogEntry] = PrivateAttr()
 
     def model_post_init(self, __context: Any) -> None:
         self._events = []

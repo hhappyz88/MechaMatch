@@ -10,3 +10,4 @@ dependencies:
       - uvicorn
       - pydantic
       - pytest-cov
+      - -e ../shared

@@ -1,0 +1,13 @@
+[project]
+name = "shared-types"
+version = "0.1.0"
+description = "Shared content between backend and scraper"
+authors = [{name = "Henry Zhang"}]
+dependencies = []
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

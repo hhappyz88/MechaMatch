@@ -39,3 +39,4 @@ Thumbs.db
 htmlcov/
 covereage.xml
 
+*.egg-info

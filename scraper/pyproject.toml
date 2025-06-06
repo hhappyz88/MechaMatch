@@ -1,5 +1,5 @@
 [project]
-name = "toy_catalogue"
+name = "toy-catalogue"
 version = "0.1.0"
 description = "Modular web scraper"
 authors = [{ name = "Henry Zhang", email = "hh.zhang520@email.com" }]
