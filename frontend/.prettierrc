@@ -1,5 +1,9 @@
-{
-	"useTabs": true,
+{	
+	"tabWidth": 2,
+	"useTabs": false,
+	"semi": true,
+	"svelteSortOrder": "options-scripts-markup-styles",
+	"svelteStrictMode": true,
 	"singleQuote": true,
 	"trailingComma": "none",
 	"printWidth": 100,
