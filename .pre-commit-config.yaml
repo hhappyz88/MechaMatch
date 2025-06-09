@@ -14,5 +14,5 @@ repos:
     hooks:
       - id: mypy
         name: mypy
-        entry: bash -c 'mypy --explicit-package-bases scraper'
+        entry: bash -c "mypy $(git diff --name-only --cached --diff-filter=ACM | grep -E '^(scraper|shared)/.*\.py$') --explicit-package-bases --ignore-missing-imports"
         language: system

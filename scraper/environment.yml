@@ -1,9 +1,9 @@
-name: mecha_match
+name: moduscrape
 channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.11
+  - python=3.12
   - beautifulsoup4
   - fastapi
   - lxml
@@ -11,7 +11,6 @@ dependencies:
   - uvicorn
   - pillow
   - psycopg2
-  - sqlalchemy
   - black
   - mypy
   - pre-commit
@@ -20,6 +19,9 @@ dependencies:
   - scrapy
   - types-requests
   - tqdm
+  - sqlalchemy
+  - aiosqlite
+  - alembic
   - pip:
       - scrapy-playwright
       - aiohttp

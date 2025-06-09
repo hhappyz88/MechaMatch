@@ -1,7 +1,7 @@
 import pytest
 from typing import Any, List, Union
 from scrapy.http import TextResponse
-from toy_catalogue.engine.extractors.link_extractor import LinkExtractor, LEParams
+from moduscrape.engine.extractors.link_extractor import LinkExtractor, LEParams
 
 
 @pytest.fixture

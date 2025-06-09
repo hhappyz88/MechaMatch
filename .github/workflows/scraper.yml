@@ -23,19 +23,19 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
-          activate-environment: mecha_match
+          activate-environment: moduscrape
           environment-file: environment.yml
           auto-activate-base: false
-          python-version: 3.11
+          python-version: 3.12
 
       - name: Run pre-commit hooks
         shell: bash -l {0}
         run: |
-          conda activate mecha_match
+          conda activate moduscrape
           pre-commit run --all-files
 
       - name: Run Unit Tests
         shell: bash -l {0}
         run: |
-          conda activate mecha_match
+          conda activate moduscrape
           pytest --maxfail=3 --disable-warnings --durations=10

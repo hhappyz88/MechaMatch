@@ -1,6 +1,6 @@
 import pytest
 from scrapy.http import TextResponse
-from toy_catalogue.engine.extractors.css import (
+from moduscrape.engine.extractors.css import (
     CssGetExtractor,
     CssGetAllExtractor,
     CssParams,

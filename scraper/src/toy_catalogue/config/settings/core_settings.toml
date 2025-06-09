@@ -1,8 +1,0 @@
-BOT_NAME = "toy_catalogue"
-TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-ROBOTSTXT_OBEY = false
-
-[playwright_launch_options]
-timeout = 10000
-
-# Anything here is considered *core* and not to be changed by user.

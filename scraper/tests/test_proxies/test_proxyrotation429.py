@@ -1,13 +1,16 @@
 import types
 import pytest
 import requests
-from toy_catalogue.middlewares import JhaoProxyMiddleware  # adjust import path
+from moduscrape.middlewares import JhaoProxyMiddleware  # adjust import path
 import random
+from typing import Any
 
 
 # --- helpers -------------------------------------------------------------
 class MockProxyClient:
     """In-memory stand-in for jhao API."""
+
+    banned: list[str]
 
     def __init__(self):
         self.fetch_calls = 0
@@ -37,16 +40,16 @@ class DummySpider:
 
 
 class DummyResponse:
-    def __init__(self, url="https://example.com", status=200):
+    def __init__(self, url: str = "https://example.com", status: int = 200):
         self.url = url
         self.status = status
 
 
 class DummyRequest:
-    def __init__(self, url="https://example.com"):
+    def __init__(self, url: str = "https://example.com"):
         self.url = url
         self.dont_filter = False
-        self.meta = {}
+        self.meta: dict[str, Any] = {}
 
     def copy(self):
         r = DummyRequest(self.url)
