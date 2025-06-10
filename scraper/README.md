@@ -1,5 +1,14 @@
 # Usage
 install scrapy project as a package
-```pip install .```
+```bash
+pip install .
+```
 Usage
-```run-spiders {sitename}```
+```bash
+run-spiders {sitename}
+```
+
+Full coverage report
+```bash
+pytest --cov --cov-report=term-missing
+```

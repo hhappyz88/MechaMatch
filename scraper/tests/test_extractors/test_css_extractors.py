@@ -1,5 +1,5 @@
 import pytest
-from scrapy.http import TextResponse
+from scrapy.http import TextResponse, Response
 from moduscrape.engine.extractors.css import (
     CssGetExtractor,
     CssGetAllExtractor,
@@ -148,3 +148,24 @@ def test_duplicates_are_preserved():
         "http://example.com/duplicate.jpg",
         "http://example.com/duplicate.jpg",
     ]
+
+
+def test_incorrect_response_css(sample_config: CssParams):
+    extractor = CssGetExtractor(sample_config)
+    fake_response = Response(url="http://fake.com")
+    with pytest.raises(TypeError):
+        extractor.extract(fake_response)
+
+
+def test_incorrect_response_css_all(sample_config: CssParams):
+    extractor = CssGetAllExtractor(sample_config)
+    fake_response = Response(url="http://fake.com")
+    with pytest.raises(TypeError):
+        extractor.extract(fake_response)
+
+
+def test_css_get_doesnt_exist(sample_config: CssParams):
+    extractor = CssGetExtractor(sample_config)
+    response = TextResponse(url="http://fake.com", body=b"")
+    result = extractor.extract(response)
+    assert result == []

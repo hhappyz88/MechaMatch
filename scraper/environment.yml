@@ -14,7 +14,8 @@ dependencies:
   - black
   - mypy
   - pre-commit
-  - pytest
+  - pytest-cov
+  - pytest-mock
   - ruff
   - scrapy
   - types-requests
@@ -29,4 +30,3 @@ dependencies:
       - types-requests
       - -e .
       - -e ../shared
-      - pytest-cov

@@ -22,13 +22,13 @@ class LEParams(ExtractorParam):
 
 
 class LinkExtractor(BaseExtractor):
-    le: ScrapyLE
+    __le: ScrapyLE
 
     def __init__(self, params: LEParams):
         kwargs = {k: v for k, v in params.model_dump(exclude_none=True).items()}
-        self.le = ScrapyLE(**kwargs)
+        self.__le = ScrapyLE(**kwargs)
 
     def extract(self, response: Response) -> list[str]:
         if not isinstance(response, TextResponse):
             raise TypeError(f"Response {response} is not Type TextResponse")
-        return [link.url for link in self.le.extract_links(response)]
+        return [link.url for link in self.__le.extract_links(response)]

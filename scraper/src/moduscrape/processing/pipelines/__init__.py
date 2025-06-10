@@ -48,6 +48,9 @@ class ProcessorPipeline(SessionLoggerMixin):
 
     @staticmethod
     def build_mapping(registry: ServiceRegistry) -> ProcessorMapping:
+        """
+        Creates mapping of state to item type and processor
+        """
         mapping: ProcessorMapping = {}
         for state, nodes in registry.input_config.processors.root.items():
             proc_mapping = [

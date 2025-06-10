@@ -34,3 +34,12 @@ build-backend = "setuptools.build_meta"
 # Optional: CLI entry point
 [project.scripts]
 run-spiders = "moduscrape.main:app"
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+include = ["src/*"]
