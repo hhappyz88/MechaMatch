@@ -15,6 +15,16 @@ CONTENT_TYPE_MAP: dict[str, type[BaseItem]] = {
 
 
 def from_response(response: Response, state: str) -> BaseItem:
+    """
+    Parses content from scrapy response into pydantic model for later processing
+    Args:
+        response (Response): scrapy Response
+        state (str): Traversal state of site where the response was obtained from
+
+    Returns:
+        BaseItem:
+          - Pydantic model that by default stores id, state, url, content and metadata
+    """
     content_type: str = (
         (response.headers.get("Content-Type") or b"text/html")
         .decode(errors="replace")

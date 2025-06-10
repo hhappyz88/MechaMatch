@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Optional, TYPE_CHECKING
 from moduscrape.processing.items._base import BaseItem
 from scrapy.http import Request, Response
-from moduscrape.session.session_logger import SessionLoggerMixin
+from moduscrape.runtime.session_logger import SessionLoggerMixin
 
 if TYPE_CHECKING:
     from moduscrape.runtime.registry import ServiceRegistry
@@ -14,6 +14,8 @@ class BasePostProcessor(ABC, SessionLoggerMixin):
     Abstract base class for processors that:
     1. Define how to insert metadata into Scrapy Request.meta
     2. Define how to process that metadata later during scraping or pipelines
+
+    Override _process to for processing behaviour
     """
 
     meta_key: str
@@ -24,9 +26,18 @@ class BasePostProcessor(ABC, SessionLoggerMixin):
     def insert_meta(
         self, request: Request, response: Optional[Response] = None, **kwargs: Any
     ) -> Request:
+        """
+        Preprocessor that inserts additional meta information into a Request
+        Args:
+            request (Request): Original Scrapy Request
+            response (Optional[Response], optional): _description_. Defaults to None.
+
+        Returns:
+            Request: Unmodified Request or Request with updated meta information
+        """
         meta_value = None
         if response:
-            meta_value = self.extract_meta_from_response(response)
+            meta_value = self._extract_meta_from_response(response)
         else:
             meta_value = kwargs.get("meta_value")
         # If no meta to add, just return the original request unchanged
@@ -37,7 +48,7 @@ class BasePostProcessor(ABC, SessionLoggerMixin):
         new_meta[self.meta_key] = meta_value
         return request.replace(meta=new_meta)
 
-    def extract_meta_from_response(self, response: Response) -> Optional[Any]:
+    def _extract_meta_from_response(self, response: Response) -> Optional[Any]:
         return None
 
     def process(self, item: BaseItem) -> BaseItem:

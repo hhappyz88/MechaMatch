@@ -12,6 +12,10 @@ if TYPE_CHECKING:
 
 
 class SessionLogger:
+    """
+    Centralised Sessionlogger
+    """
+
     _registry: ServiceRegistry
     _flushed_index: int
     _logs: list[LogEntry] = []
@@ -90,6 +94,10 @@ class SessionLogger:
 
 
 class SessionLoggerMixin:
+    """
+    Mixin that provides helper functions to allow components to easily provide logs
+    """
+
     registry: ServiceRegistry
 
     @property
@@ -107,7 +115,14 @@ class SessionLoggerMixin:
 
 
 class SessionLoggerAdapter(logging.Handler):
+    """
+    Logging handler that eavesdrops on scrapy logs
+    """
+
     def __init__(self, session_logger: SessionLogger) -> None:
+        """
+        Initialised Handler that rewires scrapy logs given session logger
+        """
         super().__init__()
         self.session_logger = session_logger
 

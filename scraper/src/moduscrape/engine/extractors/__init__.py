@@ -31,6 +31,18 @@ def get_extractor_keys() -> list[str]:
 
 
 def build_extractor(config: ExtractorConfig) -> BaseExtractor:
+    """
+    Extractor Factory given a config
+    Args:
+        config (ExtractorConfig):
+          - a pydantic structure containing extractor name and verified parameters
+
+    Raises:
+        ValueError: Extractor name is unknown
+
+    Returns:
+        BaseExtractor: Requested Extractor
+    """
     registered = EXTRACTOR_REGISTRY.get(config.class_)
     if not registered:
         raise ValueError(f"Unknown extractor: {config.class_}")

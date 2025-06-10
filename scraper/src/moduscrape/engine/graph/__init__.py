@@ -4,6 +4,11 @@ from shared_types.external.traversal_graph import TraversalGraphConfig
 
 
 class TraversalGraph:
+    """
+    Mapping of states to callbacks and associated link extractors
+    Content can be fetched via dictionary methods
+    """
+
     graph: dict[str, dict[str, list[BaseExtractor]]]
 
     def __init__(self, graph_config: TraversalGraphConfig) -> None:

@@ -19,6 +19,15 @@ def get_strategy(name: str) -> type[BaseCrawlStrategy]:
 
 
 def build_strategy(mode: str, registry: ServiceRegistry) -> BaseCrawlStrategy:
+    """
+    Strategy factory given a mode
+    Args:
+        mode (str): the class of strategy to be built
+        registry (ServiceRegistry): registry to be input into the Strategy
+
+    Raises:
+        ValueError: If strategy is unknown
+    """
     strategy_cls = STRATEGY_REGISTRY.get(mode)
     if not strategy_cls:
         raise ValueError(f"Unknown strategy: {mode}")

@@ -16,6 +16,10 @@ if TYPE_CHECKING:
 
 
 class SavePostProcessor(BasePostProcessor):
+    """
+    Saves the entire item to harddrive
+    """
+
     meta_key: str = "save"
     path_saver: type[SaveModifier]
 
@@ -51,7 +55,7 @@ class SavePostProcessor(BasePostProcessor):
             encoding="utf-8",
         )
 
-    def extract_meta_from_response(self, response: Response) -> Any | None:
+    def _extract_meta_from_response(self, response: Response) -> Any | None:
         return self.path_saver.extract_meta_from_response(response)
 
     def already_been_processed(self, item: BaseItem) -> bool:

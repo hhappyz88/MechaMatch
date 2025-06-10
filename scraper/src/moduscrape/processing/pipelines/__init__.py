@@ -10,7 +10,7 @@ from scrapy.crawler import Crawler
 from typing import Any, TYPE_CHECKING, TypeAlias
 from .post_processors import PROCESSOR_REGISTRY
 from scrapy.spiders import Spider
-from moduscrape.session.session_logger import SessionLoggerMixin
+from moduscrape.runtime.session_logger import SessionLoggerMixin
 from scrapy import signals
 from moduscrape.processing.pipelines.post_processors._base import BasePostProcessor
 from moduscrape.processing.items._base import BaseItem
@@ -23,6 +23,10 @@ ProcessorMapping: TypeAlias = dict[str, dict[type[BaseItem], list[BasePostProces
 
 
 class ProcessorPipeline(SessionLoggerMixin):
+    """
+    Processor Pipeline that directs Items to their correct processor
+    """
+
     _initialised: bool = False
 
     @classmethod
@@ -32,6 +36,9 @@ class ProcessorPipeline(SessionLoggerMixin):
         return instance
 
     def spider_opened(self, spider: Spider) -> None:
+        """
+        Delayed setup of pipeline as crawler does not have spider instantiated yet
+        """
         if not self._initialised:
             registry = getattr(spider, "registry", None)
             if registry is None:

@@ -4,7 +4,7 @@ from typing import Callable, TYPE_CHECKING
 from moduscrape.utils.url import canonicalise_url
 import logging
 from moduscrape.processing.items import from_response
-from moduscrape.session.session_logger import SessionLoggerMixin
+from moduscrape.runtime.session_logger import SessionLoggerMixin
 
 if TYPE_CHECKING:
     from moduscrape.processing.items._base import BaseItem
@@ -12,16 +12,34 @@ if TYPE_CHECKING:
 
 
 class BaseCrawlStrategy(SessionLoggerMixin):
+    """
+    Base strategy class at the core of state traversal
+
+    Can be extended by overriding _filter_links function_
+    """
+
     seen: set[str]
 
     def __init__(self, registry: ServiceRegistry) -> None:
+        """
+        Initialise a new BaseStrategy
+
+        Args:
+            registry (ServiceRegistry):
+              - registry object containing preprocessors and state traversal graph
+        """
         self.registry = registry
         self.seen = set()
 
     def make_callback(self) -> Callable[[Response], list[Request | BaseItem]]:
-        return self._callback
+        """
+        Returns subsequent function to be callbacked once previous request is complete
+        Returns:
+            Callable[[Response], list[Request | BaseItem]]: callback
+        """
+        return self._get_new_requests
 
-    def _callback(self, response: Response) -> list[Request | BaseItem]:
+    def _get_new_requests(self, response: Response) -> list[Request | BaseItem]:
         logger = logging.getLogger(__name__)
         current_state: str | None = response.meta.get("callback")
         if current_state is None:
@@ -49,7 +67,7 @@ class BaseCrawlStrategy(SessionLoggerMixin):
             for next_node, extractors in node_edges.items():
                 for extractor in extractors:
                     raw_urls = extractor.extract(response)
-                    filtered_urls = self.filter_links(
+                    filtered_urls = self._filter_links(
                         current_state, next_node, raw_urls
                     )
                     for url in filtered_urls:
@@ -74,7 +92,7 @@ class BaseCrawlStrategy(SessionLoggerMixin):
         )
         return all_outputs
 
-    def filter_links(self, from_node: str, to_node: str, urls: list[str]) -> list[str]:
+    def _filter_links(self, from_node: str, to_node: str, urls: list[str]) -> list[str]:
         return self._filter_duplicates(urls)
 
     def _filter_duplicates(self, urls: list[str]) -> list[str]:
